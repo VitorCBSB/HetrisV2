@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Game
   ( inputGame,
@@ -24,7 +23,7 @@ import qualified SDL.Mixer as Mixer
 import System.Random (RandomGen, StdGen, getStdGen)
 import Types
 import Utils (fisherYatesShuffle, tupleHistogram)
-import UtilsSDL (mainLoop, renderTextCentered, renderTexture, renderTextureCentered)
+import UtilsSDL (renderTextCentered, renderTexture, renderTextureCentered)
 
 -- In cells per second
 normalDropSpeed :: TetrisLevel -> Double
