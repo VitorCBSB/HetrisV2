@@ -23,7 +23,7 @@ Since I don't have a _Help_ screen yet, they are as follows (taken from the [gui
 - Shift and C: hold
 - Ctrl and Z: rotate 90° counterclockwise
 - Esc and F1: pause
-- Left and right: movement
+- Left and right arrows: movement
 - Down arrow: soft drop and lock delay cancel.
 
 ## Missing Features
