@@ -6,10 +6,10 @@ module InitialStates
   )
 where
 
-import Constants
+import Constants (fieldHeight, fieldWidth)
 import Control.Lens
 import Data.Array
-import System.Random
+import System.Random (StdGen)
 import Types
 
 initialIntroState :: IntroState
