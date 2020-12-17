@@ -79,6 +79,9 @@ module Types
     gameStateToReturnTo,
     countdown,
     countdownTime,
+    -- Intro state
+    IntroState(..),
+    introTime,
     -- Pause state, for when we are... paused.
     PauseState (..),
     PauseOption (..),
@@ -153,7 +156,8 @@ data MainState = MainState
   }
 
 data MainStatePhase
-  = CountingDown CountingDownState
+  = Intro IntroState
+  | CountingDown CountingDownState
   | Game GameState
   | Paused PauseState
 
@@ -258,6 +262,7 @@ instance Random TetrominoShape where
 $(makeLenses ''MainState)
 $(makeLenses ''GameState)
 $(makeLenses ''CountingDownState)
+$(makeLenses ''IntroState)
 $(makeLenses ''PauseState)
 $(makeLenses ''PlacingState)
 $(makeLenses ''Tetromino)

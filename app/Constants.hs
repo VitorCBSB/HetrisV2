@@ -1,5 +1,6 @@
 module Constants
-  ( fieldHeight,
+  ( introScreenTime,
+    fieldHeight,
     visibleFieldHeight,
     fieldWidth,
     cellSize,
@@ -12,6 +13,9 @@ module Constants
     windowSize,
   )
 where
+
+introScreenTime :: Double
+introScreenTime = 4
 
 fieldHeight :: Int
 fieldHeight = 30

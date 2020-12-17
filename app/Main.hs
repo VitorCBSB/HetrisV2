@@ -7,6 +7,7 @@ import Control.Lens
 import CountingDown
 import Game
 import InitialStates
+import Intro
 import Paused
 import qualified SDL
 import qualified SDL.Font as Ttf
@@ -30,16 +31,12 @@ initialMainState :: (SDL.Window, SDL.Renderer) -> IO MainState
 initialMainState (_, r) =
   do
     ass <- loadAssets r
-    initRand <- getStdGen
-    putStrLn $ "Initial rand is: " <> show initRand
     Mixer.setVolume 10 Mixer.AllChannels
-    let initGameState = initialGameState initRand
-    let (initCountdown, countSideEffect) = initialCountingDownState (ass ^. soundAssets) initGameState
-    applySideEffect countSideEffect
+    let initGameState = initialIntroState
     return $
       MainState
         { _gameAssets = ass,
-          _mainPhase = CountingDown initCountdown
+          _mainPhase = Intro initGameState
         }
 
 loadSoundAssets :: IO SoundAssets
@@ -139,6 +136,10 @@ loadAssets r =
 input :: SDL.EventPayload -> MainState -> IO MainState
 input ev ms =
   case ms ^. mainPhase of
+    Intro is ->
+      do
+        newPhase <- inputIntro ev (ms ^. gameAssets) is
+        return $ ms & mainPhase .~ newPhase
     Paused ps ->
       do
         newPhase <- inputPaused ev (ms ^. gameAssets) ps
@@ -155,6 +156,10 @@ input ev ms =
 tick :: Double -> MainState -> IO MainState
 tick dt ms =
   case ms ^. mainPhase of
+    Intro is ->
+      do
+        newPhase <- tickIntro dt (ms ^. gameAssets) is
+        return $ ms & mainPhase .~ newPhase
     Paused ps ->
       do
         newPhase <- tickPaused dt ps
@@ -171,6 +176,7 @@ tick dt ms =
 render :: SDL.Renderer -> MainState -> IO ()
 render renderer ms =
   case ms ^. mainPhase of
+    Intro is -> renderIntro renderer (ms ^. gameAssets) is
     Paused ps -> renderPaused renderer (ms ^. gameAssets) ps
     CountingDown cds -> renderCountingDown renderer (ms ^. gameAssets) cds
     Game gs -> renderGame renderer (ms ^. gameAssets) gs

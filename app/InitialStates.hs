@@ -2,13 +2,18 @@ module InitialStates
   ( initialCountingDownState,
     initialPauseState,
     initialGameState,
+    initialIntroState,
   )
 where
+
 import Constants
 import Control.Lens
 import Data.Array
 import System.Random
 import Types
+
+initialIntroState :: IntroState
+initialIntroState = IntroState 0
 
 initialCountingDownState :: SoundAssets -> GameState -> (CountingDownState, SideEffect)
 initialCountingDownState soundAssets gs =
