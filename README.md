@@ -12,6 +12,8 @@ This is called `V2` because the first version was my Gloss attempt.
 
 To execute, just run `stack exec HetrisV2-exe`.
 
+Make sure SDL2 is installed on your machine or compilation will fail. To do so on Windows, I used [MSYS2](https://www.msys2.org/) as it felt like the easiest way.
+
 ## Controls
 
 Since I don't have a _Help_ screen yet, they are as follows (taken from the [guideline](https://tetris.fandom.com/wiki/Tetris_Guideline)):
