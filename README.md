@@ -37,11 +37,11 @@ Feel free to open issues (or PRs) about any non-compliance you find.
 
 ## File Organization
 
-At the top level, the directories are `app`, which contains the source code for the game, and `assets` which has the images, sounds and fonts the game uses.
+At the top level, the directories are `app`, which contains the source code for the game, and `assets`, which has the images, sounds and fonts the game uses.
 
 ### Code Architecture
 
-The `Types` module contain all relevant types used for the game. If you want to know what a specific type looks like, that's very likely the place to look.
+The `Types` module contains all relevant types used for the game. If you want to know what a specific type looks like, that's very likely the place to look.
 
 As for the actual code organization, as I mentioned before, I really like [Gloss's](https://hackage.haskell.org/package/gloss) API. So much so, in fact, that I made something similar to its `play` function and adapted it to be used with SDL2. It's called `mainLoop` (located in the `UtilsSDL` module). For those who are not familiar with that, it basically means that our `mainLoop` takes a bunch of arguments, the most important of which are:
 
