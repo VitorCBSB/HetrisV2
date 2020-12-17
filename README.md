@@ -1,5 +1,7 @@
 # Hetris
 
+![Quick gameplay](Hetris.gif)
+
 A [guideline](https://tetris.fandom.com/wiki/Tetris_Guideline) compliant (as far as I can tell) Tetris clone made with [SDL2](https://hackage.haskell.org/package/sdl2).
 
 Initially the game was going to be implemented with [Gloss](https://hackage.haskell.org/package/gloss), which is a wonderful library, I really like it. The main issue I ran into is that Gloss programs, no matter how simple or complex, use _a lot_ of processing, literally making my CPU's fan spin hard. I don't know if that's a Windows thing or whatnot, but I ended up going with SDL2, with which I can avoid this issue.
