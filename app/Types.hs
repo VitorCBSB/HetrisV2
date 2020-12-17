@@ -24,6 +24,7 @@ module Types
     rotationSfx,
     defeatSfx,
     pauseSfx,
+    pauseSelectSfx,
     levelUpSfx,
     countdownSfx,
     countdownGoSfx,
@@ -80,7 +81,9 @@ module Types
     countdownTime,
     -- Pause state, for when we are... paused.
     PauseState (..),
+    PauseOption (..),
     backgroundGS,
+    selectedOption,
     -- Tetromino to place and lenses
     Tetromino (..),
     pos,
@@ -121,6 +124,7 @@ data SoundAssets = SoundAssets
     _rotationSfx :: Mixer.Chunk,
     _defeatSfx :: Mixer.Chunk,
     _pauseSfx :: Mixer.Chunk,
+    _pauseSelectSfx :: Mixer.Chunk,
     _levelUpSfx :: Mixer.Chunk,
     _countdownSfx :: Mixer.Chunk,
     _countdownGoSfx :: Mixer.Chunk
@@ -163,8 +167,14 @@ data CountingDownState = CountingDownState
     _countdownTime :: Double
   }
 
+data PauseOption
+  = ResumeGame
+  | RestartGame
+  deriving (Eq)
+
 data PauseState = PauseState
-  { _backgroundGS :: GameState
+  { _backgroundGS :: GameState,
+    _selectedOption :: PauseOption
   }
 
 data GameState = GameState

@@ -16,7 +16,7 @@ initialCountingDownState soundAssets gs =
 
 initialPauseState :: SoundAssets -> GameState -> (PauseState, SideEffect)
 initialPauseState soundAssets gs =
-  (PauseState gs, PlayAudio (soundAssets ^. pauseSfx))
+  (PauseState gs ResumeGame, PlayAudio (soundAssets ^. pauseSfx))
 
 initialGameState :: StdGen -> GameState
 initialGameState initRand =

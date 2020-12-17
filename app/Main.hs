@@ -54,6 +54,7 @@ loadSoundAssets =
     rotation <- Mixer.load "assets/sfx/rotation.wav"
     defeat <- Mixer.load "assets/sfx/defeat.wav"
     pause <- Mixer.load "assets/sfx/pause.wav"
+    pauseSelect <- Mixer.load "assets/sfx/pauseselect.wav"
     levelUp <- Mixer.load "assets/sfx/levelup.wav"
     countdown <- Mixer.load "assets/sfx/countdown.wav"
     countdownGo <- Mixer.load "assets/sfx/countdowngo.wav"
@@ -68,6 +69,7 @@ loadSoundAssets =
           _rotationSfx = rotation,
           _defeatSfx = defeat,
           _pauseSfx = pause,
+          _pauseSelectSfx = pauseSelect,
           _levelUpSfx = levelUp,
           _countdownSfx = countdown,
           _countdownGoSfx = countdownGo
