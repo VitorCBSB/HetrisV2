@@ -12,10 +12,23 @@ This is called `V2` because the first version was my Gloss attempt.
 
 To execute, just run `stack exec HetrisV2-exe`.
 
+## Controls
+
+Since I don't have a _Help_ screen yet, they are as follows (taken from the [guideline](https://tetris.fandom.com/wiki/Tetris_Guideline)):
+
+- Up arrow and X: rotate 90° clockwise
+- Space: hard drop
+- Shift and C: hold
+- Ctrl and Z: rotate 90° counterclockwise
+- Esc and F1: pause
+- Left and right: movement
+- Down arrow: soft drop and lock delay cancel.
+
 ## Missing Features
 
 The game is still not completely implemented, a few things are missing from the guideline, specifically:
 
+- Locking hard drop with Up arrow.
 - _Korobeiniki_ (and other music) while the game runs.
 - Different modes, like _marathon_ and _ultra_ modes.
 - A main menu from which you can customize things and choose the aforementioned modes.
