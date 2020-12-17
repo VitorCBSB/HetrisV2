@@ -28,7 +28,6 @@ Since I don't have a _Help_ screen yet, they are as follows (taken from the [gui
 
 The game is still not completely implemented, a few things are missing from the guideline, specifically:
 
-- Locking hard drop with Up arrow.
 - _Korobeiniki_ (and other music) while the game runs.
 - Different modes, like _marathon_ and _ultra_ modes.
 - A main menu from which you can customize things and choose the aforementioned modes.
