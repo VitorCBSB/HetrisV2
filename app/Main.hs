@@ -133,45 +133,45 @@ loadAssets r =
     <*> loadSoundAssets
     <*> loadTextAssets r
 
-input :: SDL.EventPayload -> MainState -> IO MainState
+input :: SDL.EventPayload -> MainState -> IO (MainState, Bool)
 input ev ms =
   case ms ^. mainPhase of
     Intro is ->
       do
         newPhase <- inputIntro ev (ms ^. gameAssets) is
-        return $ ms & mainPhase .~ newPhase
+        return (ms & mainPhase .~ newPhase, True)
     Paused ps ->
       do
-        newPhase <- inputPaused ev (ms ^. gameAssets) ps
-        return $ ms & mainPhase .~ newPhase
+        (newPhase, keepRunning) <- inputPaused ev (ms ^. gameAssets) ps
+        return (ms & mainPhase .~ newPhase, keepRunning)
     CountingDown cds ->
       do
         newPhase <- inputCountingDown ev (ms ^. gameAssets) cds
-        return $ ms & mainPhase .~ newPhase
+        return (ms & mainPhase .~ newPhase, True)
     Game gs ->
       do
         newPhase <- inputGame ev (ms ^. gameAssets) gs
-        return $ ms & mainPhase .~ newPhase
+        return (ms & mainPhase .~ newPhase, True)
 
-tick :: Double -> MainState -> IO MainState
+tick :: Double -> MainState -> IO (MainState, Bool)
 tick dt ms =
   case ms ^. mainPhase of
     Intro is ->
       do
         newPhase <- tickIntro dt (ms ^. gameAssets) is
-        return $ ms & mainPhase .~ newPhase
+        return (ms & mainPhase .~ newPhase, True)
     Paused ps ->
       do
         newPhase <- tickPaused dt ps
-        return $ ms & mainPhase .~ newPhase
+        return (ms & mainPhase .~ newPhase, True)
     CountingDown cds ->
       do
         newPhase <- tickCountingDown dt (ms ^. gameAssets) cds
-        return $ ms & mainPhase .~ newPhase
+        return (ms & mainPhase .~ newPhase, True)
     Game gs ->
       do
         newPhase <- tickGame dt (ms ^. gameAssets) gs
-        return $ ms & mainPhase .~ newPhase
+        return (ms & mainPhase .~ newPhase, True)
 
 render :: SDL.Renderer -> MainState -> IO ()
 render renderer ms =

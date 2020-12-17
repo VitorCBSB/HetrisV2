@@ -174,6 +174,7 @@ data CountingDownState = CountingDownState
 data PauseOption
   = ResumeGame
   | RestartGame
+  | QuitGame
   deriving (Eq)
 
 data PauseState = PauseState
