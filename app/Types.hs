@@ -101,7 +101,7 @@ import FloatingText (FloatingText)
 import qualified SDL
 import qualified SDL.Font as Ttf
 import qualified SDL.Mixer as Mixer
-import System.Random (Random (random, randomR), RandomGen, StdGen)
+import System.Random (RandomGen, StdGen)
 import Utils (fisherYatesShuffle)
 
 data ImageAssets = ImageAssets
@@ -255,10 +255,6 @@ data Tetromino = Tetromino
   }
 
 type Block = TetrominoShape
-
-instance Random TetrominoShape where
-  randomR (lo, hi) g = let (a, g') = randomR (fromEnum lo, fromEnum hi) g in (toEnum a, g')
-  random = randomR (minBound, maxBound)
 
 $(makeLenses ''MainState)
 $(makeLenses ''GameState)
