@@ -20,7 +20,7 @@ import Linear.V4 (V4 (V4))
 import qualified SDL
 import qualified SDL.Font as Ttf
 import qualified SDL.Mixer as Mixer
-import System.Random (RandomGen, StdGen, getStdGen)
+import System.Random (RandomGen, StdGen)
 import Types
 import Utils (fisherYatesShuffle, tupleHistogram)
 import UtilsSDL (renderTextCentered, renderTexture, renderTextureCentered)

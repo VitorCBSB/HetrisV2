@@ -7,13 +7,12 @@ import Control.Lens
 import CountingDown
 import Game
 import InitialStates
-import MainMenu
 import Intro
+import MainMenu
 import Paused
 import qualified SDL
 import qualified SDL.Font as Ttf
 import qualified SDL.Mixer as Mixer
-import System.Random (StdGen, getStdGen)
 import Types
 import UtilsSDL (mainLoop)
 

@@ -11,7 +11,6 @@ import Constants (introScreenTime)
 import Control.Lens
 import InitialStates (initialMainMenuState)
 import qualified SDL
-import System.Random (getStdGen)
 import Types
 import UtilsSDL
 

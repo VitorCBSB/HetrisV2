@@ -11,7 +11,7 @@ import Constants (windowSize)
 import Control.Lens
 import InitialStates (initialCountingDownState, initialGameState)
 import qualified SDL
-import System.Random (getStdGen)
+import System.Random (randomIO, mkStdGen)
 import Types
 import UtilsSDL (renderTextCentered)
 
@@ -22,8 +22,8 @@ inputMainMenu ev assets mms =
       -- New marathon
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption) == Marathon ->
         do
-          initRand <- getStdGen
-          let initGameState = initialGameState initRand
+          rand <- randomIO
+          let initGameState = initialGameState (mkStdGen rand)
           let (initCountdown, countSideEffect) = initialCountingDownState (assets ^. soundAssets) initGameState
           applySideEffect countSideEffect
           return (CountingDown initCountdown, True)
