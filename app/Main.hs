@@ -7,6 +7,7 @@ import Control.Lens
 import CountingDown
 import Game
 import InitialStates
+import MainMenu
 import Intro
 import Paused
 import qualified SDL
@@ -51,7 +52,7 @@ loadSoundAssets =
     rotation <- Mixer.load "assets/sfx/rotation.wav"
     defeat <- Mixer.load "assets/sfx/defeat.wav"
     pause <- Mixer.load "assets/sfx/pause.wav"
-    pauseSelect <- Mixer.load "assets/sfx/pauseselect.wav"
+    menuSelect <- Mixer.load "assets/sfx/menuselect.wav"
     levelUp <- Mixer.load "assets/sfx/levelup.wav"
     countdown <- Mixer.load "assets/sfx/countdown.wav"
     countdownGo <- Mixer.load "assets/sfx/countdowngo.wav"
@@ -66,7 +67,7 @@ loadSoundAssets =
           _rotationSfx = rotation,
           _defeatSfx = defeat,
           _pauseSfx = pause,
-          _pauseSelectSfx = pauseSelect,
+          _menuSelectSfx = menuSelect,
           _levelUpSfx = levelUp,
           _countdownSfx = countdown,
           _countdownGoSfx = countdownGo
@@ -140,6 +141,10 @@ input ev ms =
       do
         newPhase <- inputIntro ev (ms ^. gameAssets) is
         return (ms & mainPhase .~ newPhase, True)
+    MainMenu mms ->
+      do
+        (newPhase, keepRunning) <- inputMainMenu ev (ms ^. gameAssets) mms
+        return (ms & mainPhase .~ newPhase, keepRunning)
     Paused ps ->
       do
         (newPhase, keepRunning) <- inputPaused ev (ms ^. gameAssets) ps
@@ -160,6 +165,10 @@ tick dt ms =
       do
         newPhase <- tickIntro dt (ms ^. gameAssets) is
         return (ms & mainPhase .~ newPhase, True)
+    MainMenu mms ->
+      do
+        newPhase <- tickMainMenu dt mms
+        return (ms & mainPhase .~ newPhase, True)
     Paused ps ->
       do
         newPhase <- tickPaused dt ps
@@ -177,6 +186,7 @@ render :: SDL.Renderer -> MainState -> IO ()
 render renderer ms =
   case ms ^. mainPhase of
     Intro is -> renderIntro renderer (ms ^. gameAssets) is
+    MainMenu mms -> renderMainMenu renderer (ms ^. gameAssets) mms
     Paused ps -> renderPaused renderer (ms ^. gameAssets) ps
     CountingDown cds -> renderCountingDown renderer (ms ^. gameAssets) cds
     Game gs -> renderGame renderer (ms ^. gameAssets) gs

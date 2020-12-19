@@ -3,6 +3,7 @@ module InitialStates
     initialPauseState,
     initialGameState,
     initialIntroState,
+    initialMainMenuState
   )
 where
 
@@ -14,6 +15,9 @@ import Types
 
 initialIntroState :: IntroState
 initialIntroState = IntroState 0
+
+initialMainMenuState :: MainMenuState
+initialMainMenuState = MainMenuState Marathon
 
 initialCountingDownState :: SoundAssets -> GameState -> (CountingDownState, SideEffect)
 initialCountingDownState soundAssets gs =

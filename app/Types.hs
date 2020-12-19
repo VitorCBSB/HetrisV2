@@ -24,7 +24,7 @@ module Types
     rotationSfx,
     defeatSfx,
     pauseSfx,
-    pauseSelectSfx,
+    menuSelectSfx,
     levelUpSfx,
     countdownSfx,
     countdownGoSfx,
@@ -45,6 +45,7 @@ module Types
     mainPhase,
     gameAssets,
     -- Main menu state
+    MainMenuOption (..),
     MainMenuState (..),
     mainMenuSelectedOption,
     -- Tetris game state and lenses
@@ -131,7 +132,7 @@ data SoundAssets = SoundAssets
     _rotationSfx :: Mixer.Chunk,
     _defeatSfx :: Mixer.Chunk,
     _pauseSfx :: Mixer.Chunk,
-    _pauseSelectSfx :: Mixer.Chunk,
+    _menuSelectSfx :: Mixer.Chunk,
     _levelUpSfx :: Mixer.Chunk,
     _countdownSfx :: Mixer.Chunk,
     _countdownGoSfx :: Mixer.Chunk
@@ -161,13 +162,17 @@ data MainState = MainState
 
 data MainStatePhase
   = Intro IntroState
+  | MainMenu MainMenuState
   | CountingDown CountingDownState
   | Game GameState
   | Paused PauseState
 
 data MainMenuOption
-  = NewGame
+  = Marathon
+  | Help
+  | Credits
   | MainQuitGame
+  deriving (Eq)
 
 data MainMenuState = MainMenuState
   { _mainMenuSelectedOption :: MainMenuOption
@@ -186,6 +191,7 @@ data CountingDownState = CountingDownState
 data PauseOption
   = ResumeGame
   | RestartGame
+  | BackToMainMenu
   | PauseQuitGame
   deriving (Eq)
 

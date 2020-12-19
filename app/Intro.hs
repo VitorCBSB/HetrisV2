@@ -9,7 +9,7 @@ where
 
 import Constants (introScreenTime)
 import Control.Lens
-import InitialStates (initialCountingDownState, initialGameState)
+import InitialStates (initialMainMenuState)
 import qualified SDL
 import System.Random (getStdGen)
 import Types
@@ -27,12 +27,7 @@ inputIntro ev assets is =
 
 endIntro :: Assets -> IO MainStatePhase
 endIntro assets =
-  do
-    initRand <- getStdGen
-    let initGameState = initialGameState initRand
-    let (initCountdown, countSideEffect) = initialCountingDownState (assets ^. soundAssets) initGameState
-    applySideEffect countSideEffect
-    return $ CountingDown initCountdown
+  return $ MainMenu initialMainMenuState
 
 tickIntro :: Double -> Assets -> IntroState -> IO MainStatePhase
 tickIntro dt assets is =
