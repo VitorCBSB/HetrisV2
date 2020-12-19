@@ -31,6 +31,21 @@ initialGameState initRand =
       array
         (0, fieldHeight - 1)
         [(i, array (0, fieldWidth - 1) [(j, Nothing) | j <- [0 .. fieldWidth - 1]]) | i <- [0 .. fieldHeight - 1]]
+    debugPerfectClearBoard =
+      cleanBoard
+        // [ (0, array (0, fieldWidth - 1) ([(0, Just S), (1, Nothing)] <> map (\j -> (j, Just S)) [2 .. fieldWidth - 1])),
+             (1, array (0, fieldWidth - 1) ([(0, Nothing), (1, Nothing), (2, Nothing)] <> map (\j -> (j, Just S)) [3 .. fieldWidth - 1]))
+           ]
+    debugDTCannonBoard =
+      cleanBoard
+        // [ (0, array (0, fieldWidth - 1) ([(2, Nothing)] <> map (\j -> (j, Just S)) [0, 1, 3, 4, 5, 6, 7, 8, 9]))
+           , (1, array (0, fieldWidth - 1) ([(2, Nothing)] <> map (\j -> (j, Just S)) [0, 1, 3, 4, 5, 6, 7, 8, 9]))
+           , (2, array (0, fieldWidth - 1) ([(1, Nothing), (2, Nothing), (3, Nothing)] <> map (\j -> (j, Just S)) [0, 4, 5, 6, 7, 8, 9]))
+           , (3, array (0, fieldWidth - 1) ([(1, Nothing), (2, Nothing)] <> map (\j -> (j, Just S)) [0, 3, 4, 5, 6, 7, 8, 9]))
+           , (4, array (0, fieldWidth - 1) ([(2, Nothing)] <> map (\j -> (j, Just S)) [0, 1, 3, 4, 5, 6, 7, 8, 9]))
+           , (5, array (0, fieldWidth - 1) ([(3, Just S)] <> map (\j -> (j, Nothing)) [0, 1, 2, 4, 5, 6, 7, 8, 9]))
+           , (6, array (0, fieldWidth - 1) ([(2, Just S), (3, Just S)] <> map (\j -> (j, Nothing)) [0, 1, 4, 5, 6, 7, 8, 9]))
+           ]
     ((initTetShape, next1, next2, next3, next4, next5, next6), rand') = newTetrominoBag initRand
     ((bagNext1, bagNext2, bagNext3, bagNext4, bagNext5, bagNext6, bagNext7), rand'') = newTetrominoBag rand'
     initNextBag = (Just bagNext1, Just bagNext2, Just bagNext3, Just bagNext4, Just bagNext5, Just bagNext6, Just bagNext7)

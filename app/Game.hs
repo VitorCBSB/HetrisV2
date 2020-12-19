@@ -466,7 +466,7 @@ textFromLineClear lc =
     MiniTSpinSingle -> [("Mini T-Spin", -24), ("Single", 0)]
     B2BTSpinSingle -> [("B2B T-Spin", -24), ("Single!", 0)]
     B2BTSpinDouble -> [("B2B T-Spin", -24), ("DOUBLE!!", 0)]
-    B2BTSpinTriple -> [("B2B T-SPIN", 0), ("TRIPLE!!!", 0)]
+    B2BTSpinTriple -> [("B2B T-SPIN", -24), ("TRIPLE!!!", 0)]
     B2BTetris -> [("B2B TETRIS!!", 0)]
 
 floatingTextLineClear :: LineClear -> Double -> Double -> (Double, Double) -> [FloatingText]
