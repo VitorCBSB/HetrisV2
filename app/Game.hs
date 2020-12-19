@@ -388,10 +388,10 @@ calculateClearType linesToClear maybeLastClear t b =
       tspin = (t ^. shape) == T && not successLeft && not successRight && not successUp
       tHeadAdjacents =
         case t ^. rotation of
-          Base -> [(1, -1), (2, 0), (1, 1)]
-          Ninety -> [(1, 1), (0, 2), (-1, 1)]
-          OneEighty -> [(-2, 0), (-1, -1), (-1, 1)]
-          TwoSeventy -> [(0, -2), (-1, -1), (1, -1)]
+          Base -> [(1, -1), (1, 1)]
+          Ninety -> [(1, 1), (-1, 1)]
+          OneEighty -> [(-1, -1), (-1, 1)]
+          TwoSeventy -> [(-1, -1), (1, -1)]
       (tetI, tetJ) = t ^. pos
       tileIsFilled (i, j) =
         let (bI, bJ) = (floor $ tetI + i, tetJ + j)
