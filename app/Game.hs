@@ -12,7 +12,7 @@ import Control.Lens
 import Control.Monad (forM_, when)
 import Data.Array
 import Data.List (find, foldl')
-import Data.Maybe (fromJust, isJust, isNothing, mapMaybe)
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing, mapMaybe)
 import qualified Data.Text as T
 import FloatingText (FloatingText, makeFloatingText, renderFloatingText, tickFloatingText)
 import InitialStates
@@ -550,7 +550,12 @@ lockPiece ps assets gs =
                         [ makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 600) t,
                           makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 648) (T.pack $ show s)
                         ]
-               in (newGS & comboCount .~ 0 & floatingTexts <>~ spinText, sideEffects <> [PlayAudio (assets ^. soundAssets . lockedPieceSfx)])
+               in ( newGS
+                      & comboCount .~ 0
+                      & score +~ maybe 0 snd maybeSpinReward
+                      & floatingTexts <>~ spinText,
+                    sideEffects <> [PlayAudio (assets ^. soundAssets . lockedPieceSfx)]
+                  )
 
 tetrominoVel :: Bool -> TetrisLevel -> Double
 tetrominoVel wantsToSoftDrop tl =
