@@ -419,16 +419,11 @@ calculateClearType linesToClear maybeLastClear t b =
                 Nothing -> TSpinSingle
                 Just c -> if difficultClear c then B2BTSpinSingle else TSpinSingle
         2 ->
-          case lockType of
-            NormalLock -> Double
-            MiniTSpinLock ->
-              case maybeLastClear of
-                Nothing -> MiniTSpinDouble
-                Just c -> if difficultClear c then B2BMiniTSpinDouble else MiniTSpinDouble
-            TSpinLock ->
-              case maybeLastClear of
-                Nothing -> TSpinDouble
-                Just c -> if difficultClear c then B2BTSpinDouble else TSpinDouble
+          if lockType == TSpinLock
+            then case maybeLastClear of
+              Nothing -> TSpinDouble
+              Just c -> if difficultClear c then B2BTSpinDouble else TSpinDouble
+            else Double
         3 ->
           if lockType == TSpinLock
             then case maybeLastClear of
@@ -452,8 +447,6 @@ scoreFromLineClear lc (TetrisLevel l) =
     TSpinDouble -> 1200 * l'
     TSpinTriple -> 1600 * l'
     MiniTSpinSingle -> 200 * l'
-    MiniTSpinDouble -> 400 * l'
-    B2BMiniTSpinDouble -> 600 * l'
     B2BTSpinSingle -> 1200 * l'
     B2BTSpinDouble -> 1800 * l'
     B2BTSpinTriple -> 2400 * l'
@@ -472,8 +465,6 @@ textFromLineClear lc =
     TSpinDouble -> [("T-Spin", -24), ("Double!", 0)]
     TSpinTriple -> [("T-SPIN", -24), ("TRIPLE!!", 0)]
     MiniTSpinSingle -> [("Mini T-Spin", -24), ("Single", 0)]
-    MiniTSpinDouble -> [("Mini T-Spin", -24), ("Double!", 0)]
-    B2BMiniTSpinDouble -> [("B2B Mini T-Spin", -24), ("Double!!", 0)]
     B2BTSpinSingle -> [("B2B T-Spin", -24), ("Single!", 0)]
     B2BTSpinDouble -> [("B2B T-Spin", -24), ("DOUBLE!!", 0)]
     B2BTSpinTriple -> [("B2B T-SPIN", 0), ("TRIPLE!!!", 0)]

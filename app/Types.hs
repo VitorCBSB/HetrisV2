@@ -224,8 +224,6 @@ data LineClear
   | TSpinDouble
   | TSpinTriple
   | MiniTSpinSingle
-  | MiniTSpinDouble
-  | B2BMiniTSpinDouble
   | B2BTSpinSingle
   | B2BTetris
   | B2BTSpinDouble
