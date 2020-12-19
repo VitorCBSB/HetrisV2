@@ -44,6 +44,9 @@ module Types
     MainStatePhase (..),
     mainPhase,
     gameAssets,
+    -- Main menu state
+    MainMenuState (..),
+    mainMenuSelectedOption,
     -- Tetris game state and lenses
     GameState (..),
     board,
@@ -61,6 +64,7 @@ module Types
     GamePhase (..),
     TetrisLevel (..),
     LineClear (..),
+    LockType (..),
     newTetrominoBag,
     -- Main game sub-state Placing's state and lenses
     PlacingState (..),
@@ -80,7 +84,7 @@ module Types
     countdown,
     countdownTime,
     -- Intro state
-    IntroState(..),
+    IntroState (..),
     introTime,
     -- Pause state, for when we are... paused.
     PauseState (..),
@@ -161,6 +165,14 @@ data MainStatePhase
   | Game GameState
   | Paused PauseState
 
+data MainMenuOption
+  = NewGame
+  | MainQuitGame
+
+data MainMenuState = MainMenuState
+  { _mainMenuSelectedOption :: MainMenuOption
+  }
+
 data IntroState = IntroState
   { _introTime :: Double
   }
@@ -174,7 +186,7 @@ data CountingDownState = CountingDownState
 data PauseOption
   = ResumeGame
   | RestartGame
-  | QuitGame
+  | PauseQuitGame
   deriving (Eq)
 
 data PauseState = PauseState
@@ -196,6 +208,12 @@ data GameState = GameState
     _rand :: StdGen,
     _floatingTexts :: [FloatingText]
   }
+
+data LockType
+  = NormalLock
+  | TSpinLock
+  | MiniTSpinLock
+  deriving (Eq)
 
 data LineClear
   = Single
@@ -261,6 +279,7 @@ $(makeLenses ''GameState)
 $(makeLenses ''CountingDownState)
 $(makeLenses ''IntroState)
 $(makeLenses ''PauseState)
+$(makeLenses ''MainMenuState)
 $(makeLenses ''PlacingState)
 $(makeLenses ''Tetromino)
 $(makeLenses ''ImageAssets)

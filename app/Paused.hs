@@ -36,7 +36,7 @@ inputPaused ev assets ps =
           applySideEffect countSfx
           return (CountingDown initCountdown, True)
       -- Quit game
-      | SDL.keyboardEventKeyMotion evData == SDL.Pressed && (SDL.keysymScancode . SDL.keyboardEventKeysym) evData == SDL.ScancodeReturn && (ps ^. selectedOption == QuitGame) ->
+      | SDL.keyboardEventKeyMotion evData == SDL.Pressed && (SDL.keysymScancode . SDL.keyboardEventKeysym) evData == SDL.ScancodeReturn && (ps ^. selectedOption == PauseQuitGame) ->
         return (Paused ps, False)
       -- Select down
       | SDL.keyboardEventKeyMotion evData == SDL.Pressed && (SDL.keysymScancode . SDL.keyboardEventKeysym) evData == SDL.ScancodeDown ->
@@ -53,13 +53,13 @@ inputPaused ev assets ps =
 
 selectDown :: PauseOption -> PauseOption
 selectDown ResumeGame = RestartGame
-selectDown RestartGame = QuitGame
-selectDown QuitGame = ResumeGame
+selectDown RestartGame = PauseQuitGame
+selectDown PauseQuitGame = ResumeGame
 
 selectUp :: PauseOption -> PauseOption
-selectUp ResumeGame = QuitGame
+selectUp ResumeGame = PauseQuitGame
 selectUp RestartGame = ResumeGame
-selectUp QuitGame = RestartGame
+selectUp PauseQuitGame = RestartGame
 
 tickPaused :: Double -> PauseState -> IO MainStatePhase
 tickPaused _ ps = return $ Paused ps
@@ -75,4 +75,4 @@ renderPaused renderer assets ps =
   where
     resumeText = if ps ^. selectedOption == ResumeGame then "-- Resume game --" else "Resume game"
     restartText = if ps ^. selectedOption == RestartGame then "-- Restart game --" else "Restart game"
-    quitText = if ps ^. selectedOption == QuitGame then "-- Quit game --" else "Quit game"
+    quitText = if ps ^. selectedOption == PauseQuitGame then "-- Quit game --" else "Quit game"

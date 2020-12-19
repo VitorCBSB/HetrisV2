@@ -33,7 +33,7 @@ initialMainState (_, r) =
     ass <- loadAssets r
     Mixer.setVolume 10 Mixer.AllChannels
     let initGameState = initialIntroState
-    return $
+    return
       MainState
         { _gameAssets = ass,
           _mainPhase = Intro initGameState

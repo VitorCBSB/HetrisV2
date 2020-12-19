@@ -378,8 +378,8 @@ sendNextTetromino fromHeld assets gs =
 levelFromLinesCleared :: Int -> TetrisLevel
 levelFromLinesCleared linesCleared = TetrisLevel $ linesCleared `div` linesLevelUp
 
-calculateClearType :: Int -> Maybe LineClear -> Tetromino -> Board -> LineClear
-calculateClearType linesToClear maybeLastClear t b =
+calculateLockType :: Tetromino -> Board -> LockType
+calculateLockType t b =
   let (successLeft, successRight, successUp) =
         ( snd $ shiftToLeft b t,
           snd $ shiftToRight b t,
@@ -398,37 +398,47 @@ calculateClearType linesToClear maybeLastClear t b =
          in bI < 0 || bJ < 0 || bJ >= fieldWidth || isJust (b ! bI ! bJ)
       headNeighborsAreFilled = all tileIsFilled tHeadAdjacents
       miniTspin = not headNeighborsAreFilled
+   in if tspin
+        then
+          if miniTspin
+            then MiniTSpinLock
+            else TSpinLock
+        else NormalLock
+
+calculateClearType :: Int -> Maybe LineClear -> Tetromino -> Board -> LineClear
+calculateClearType linesToClear maybeLastClear t b =
+  let lockType = calculateLockType t b
+      difficultClear c = c /= Single && c /= Double && c /= Triple
    in case linesToClear of
         1 ->
-          if tspin
-            then
-              if miniTspin
-                then MiniTSpinSingle
-                else case maybeLastClear of
-                  Nothing -> TSpinSingle
-                  Just c -> if c == TSpinSingle || c == B2BTSpinSingle then B2BTSpinSingle else TSpinSingle
-            else Single
+          case lockType of
+            NormalLock -> Single
+            MiniTSpinLock -> MiniTSpinSingle
+            TSpinLock ->
+              case maybeLastClear of
+                Nothing -> TSpinSingle
+                Just c -> if difficultClear c then B2BTSpinSingle else TSpinSingle
         2 ->
-          if tspin
-            then
-              if miniTspin
-                then case maybeLastClear of
-                  Nothing -> MiniTSpinDouble
-                  Just c -> if c == MiniTSpinDouble || c == B2BMiniTSpinDouble then B2BMiniTSpinDouble else MiniTSpinDouble
-                else case maybeLastClear of
-                  Nothing -> TSpinDouble
-                  Just c -> if c == TSpinDouble || c == B2BTSpinDouble then B2BTSpinDouble else TSpinDouble
-            else Double
+          case lockType of
+            NormalLock -> Double
+            MiniTSpinLock ->
+              case maybeLastClear of
+                Nothing -> MiniTSpinDouble
+                Just c -> if difficultClear c then B2BMiniTSpinDouble else MiniTSpinDouble
+            TSpinLock ->
+              case maybeLastClear of
+                Nothing -> TSpinDouble
+                Just c -> if difficultClear c then B2BTSpinDouble else TSpinDouble
         3 ->
-          if tspin
+          if lockType == TSpinLock
             then case maybeLastClear of
               Nothing -> TSpinTriple
-              Just c -> if c == TSpinTriple || c == B2BTSpinTriple then B2BTSpinTriple else TSpinTriple
+              Just c -> if difficultClear c then B2BTSpinTriple else TSpinTriple
             else Triple
         4 ->
           case maybeLastClear of
             Nothing -> Tetris
-            Just c -> if c == Tetris || c == B2BTetris then B2BTetris else Tetris
+            Just c -> if difficultClear c then B2BTetris else Tetris
         _ -> error "Lines to clear was either greater than 4 or less than 0. Basically impossible to happen."
 
 scoreFromLineClear :: LineClear -> TetrisLevel -> Int
@@ -467,7 +477,7 @@ textFromLineClear lc =
     B2BTSpinSingle -> [("B2B T-Spin", -24), ("Single!", 0)]
     B2BTSpinDouble -> [("B2B T-Spin", -24), ("DOUBLE!!", 0)]
     B2BTSpinTriple -> [("B2B T-SPIN", 0), ("TRIPLE!!!", 0)]
-    B2BTetris -> [("B2B TETRIS!!!", 0)]
+    B2BTetris -> [("B2B TETRIS!!", 0)]
 
 floatingTextLineClear :: LineClear -> Double -> Double -> (Double, Double) -> [FloatingText]
 floatingTextLineClear lc ttl speed (x, y) =
@@ -483,6 +493,9 @@ lockPiece ps assets gs =
       positionsToUpdate = tupleHistogram blockPos
       newBoard = (gs ^. board) // map (\(r, cols) -> (r, ((gs ^. board) ! r) // map (\col -> (col, Just $ ps ^. tetromino . shape)) cols)) positionsToUpdate
       linesToClear = map fst $ filter (\(r, _) -> and (isJust <$> (newBoard ! r))) positionsToUpdate
+      (TetrisLevel l) = levelFromLinesCleared (gs ^. linesCleared)
+      (gpX, gpY) = gamePosition
+      scoreOffsetX = -30
       defeated = all (\(i, _) -> i >= visibleFieldHeight) blockPos
    in if defeated
         then (gs & phase .~ Defeat 0, [PlayAudio (assets ^. soundAssets . defeatSfx)])
@@ -495,10 +508,7 @@ lockPiece ps assets gs =
                   levelUpAudio = if levelFromLinesCleared newLinesCleared > levelFromLinesCleared (gs ^. linesCleared) then [PlayAudio (assets ^. soundAssets . levelUpSfx)] else []
                   lineClearType = calculateClearType (length linesToClear) (gs ^. maybeLastLockClear) (ps ^. tetromino) (gs ^. board)
                   clearScore = scoreFromLineClear lineClearType (levelFromLinesCleared (gs ^. linesCleared))
-                  scoreOffsetX = -30
-                  (gpX, gpY) = gamePosition
                   newComboCount = gs ^. comboCount + 1
-                  (TetrisLevel l) = levelFromLinesCleared (gs ^. linesCleared)
                   comboScore =
                     if newComboCount > 1
                       then newComboCount * 50 * (l + 1)
@@ -527,7 +537,20 @@ lockPiece ps assets gs =
                   )
             else
               let (newGS, sideEffects) = sendNextTetromino False assets (gs {_board = newBoard})
-               in (newGS {_maybeLastLockClear = Nothing, _comboCount = 0}, sideEffects <> [PlayAudio (assets ^. soundAssets . lockedPieceSfx)])
+                  lockType = calculateLockType (ps ^. tetromino) (gs ^. board)
+                  maybeSpinReward =
+                    case lockType of
+                      NormalLock -> Nothing
+                      MiniTSpinLock -> Just ("Mini T-Spin", 100 * (l + 1))
+                      TSpinLock -> Just ("T-Spin", 400 * (l + 1))
+                  spinText =
+                    case maybeSpinReward of
+                      Nothing -> []
+                      Just (t, s) ->
+                        [ makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 600) t,
+                          makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 648) (T.pack $ show s)
+                        ]
+               in (newGS & comboCount .~ 0 & floatingTexts <>~ spinText, sideEffects <> [PlayAudio (assets ^. soundAssets . lockedPieceSfx)])
 
 tetrominoVel :: Bool -> TetrisLevel -> Double
 tetrominoVel wantsToSoftDrop tl =
