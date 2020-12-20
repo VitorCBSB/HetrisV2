@@ -11,11 +11,11 @@ import Constants (windowSize)
 import Control.Lens
 import InitialStates (initialCountingDownState, initialGameState)
 import qualified SDL
-import System.Random (randomIO, mkStdGen)
+import System.Random (mkStdGen, randomIO)
 import Types
 import UtilsSDL (renderTextCentered)
 
-inputMainMenu :: SDL.EventPayload -> Assets -> MainMenuState -> IO (MainStatePhase, Bool)
+inputMainMenu :: SDL.EventPayload -> Assets -> MainMenuState -> IO (Maybe MainStatePhase)
 inputMainMenu ev assets mms =
   case ev of
     SDL.KeyboardEvent (SDL.KeyboardEventData _ motion repeat keySym)
@@ -26,28 +26,28 @@ inputMainMenu ev assets mms =
           let initGameState = initialGameState (mkStdGen rand)
           let (initCountdown, countSideEffect) = initialCountingDownState (assets ^. soundAssets) initGameState
           applySideEffect countSideEffect
-          return (CountingDown initCountdown, True)
+          return (Just $ CountingDown initCountdown)
       -- Help screen
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == Help) ->
-        return (MainMenu mms, True)
+        return (Just $ MainMenu mms)
       -- Credits screen
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == Credits) ->
-        return (MainMenu mms, True)
+        return (Just $ MainMenu mms)
       -- Quit game
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == MainQuitGame) ->
-        return (MainMenu mms, False)
+        return Nothing
       -- Select down
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeDown ->
         do
           applySideEffect (PlayAudio (assets ^. soundAssets . menuSelectSfx))
-          return (MainMenu (mms & mainMenuSelectedOption %~ selectDown), True)
+          return (Just $ MainMenu (mms & mainMenuSelectedOption %~ selectDown))
       -- Select up
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeUp ->
         do
           applySideEffect (PlayAudio (assets ^. soundAssets . menuSelectSfx))
-          return (MainMenu (mms & mainMenuSelectedOption %~ selectUp), True)
-      | otherwise -> return (MainMenu mms, True)
-    _ -> return (MainMenu mms, True)
+          return (Just $ MainMenu (mms & mainMenuSelectedOption %~ selectUp))
+      | otherwise -> return (Just $ MainMenu mms)
+    _ -> return (Just $ MainMenu mms)
 
 selectDown :: MainMenuOption -> MainMenuOption
 selectDown Marathon = Help

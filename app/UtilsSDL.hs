@@ -20,8 +20,8 @@ import qualified SDL.Mixer as Mixer
 mainLoop ::
   ((SDL.Window, SDL.Renderer) -> IO world) -> -- Initial state
   Word32 -> -- FPS
-  (SDL.EventPayload -> world -> IO (world, Bool)) -> -- Event response function, False on return means quit
-  (Double -> world -> IO (world, Bool)) -> -- Tick function, False on return means quit
+  (SDL.EventPayload -> world -> IO (Maybe world)) -> -- Event response function, Nothing on return means quit
+  (Double -> world -> IO (Maybe world)) -> -- Tick function, Nothing on return means quit
   (SDL.Renderer -> world -> IO ()) -> -- Render function
   T.Text -> -- Window name
   (Int, Int) -> -- Window size
@@ -33,8 +33,8 @@ mainLoop init fps event tick render windowName windowSize =
 initializedLoop ::
   ((SDL.Window, SDL.Renderer) -> IO world) -> -- Initial state
   Word32 -> -- FPS
-  (SDL.EventPayload -> world -> IO (world, Bool)) -> -- Event response function
-  (Double -> world -> IO (world, Bool)) -> -- Tick function
+  (SDL.EventPayload -> world -> IO (Maybe world)) -> -- Event response function
+  (Double -> world -> IO (Maybe world)) -> -- Tick function
   (SDL.Renderer -> world -> IO ()) -> -- Render function
   (SDL.Window, SDL.Renderer) ->
   IO ()
@@ -46,20 +46,28 @@ initializedLoop init fps event tick render ctx@(_, r) =
       do
         start <- SDL.ticks
         events <- fmap SDL.eventPayload <$> SDL.pollEvents
-        (postEv, inpRun) <-
+        maybePostEv <-
           foldM
-            ( \(st, keepRunning) ev ->
-                do
-                  (st', keepRunning') <- event ev st
-                  return (st', keepRunning && keepRunning')
+            ( \mst ev ->
+                case mst of
+                  Nothing -> return Nothing
+                  Just st -> event ev st
             )
-            (s, True)
+            (Just s)
             events
-        (postTick, tickRun) <- tick frameTime postEv
-        (SDL.clear r >> render r postTick >> SDL.present r)
-        end <- SDL.ticks
-        regulateFPS fps start end
-        unless (SDL.QuitEvent `elem` events || not inpRun || not tickRun) (loop postTick)
+        case maybePostEv of
+          Nothing -> return ()
+          Just postEv ->
+            do
+              maybePostTick <- tick frameTime postEv
+              case maybePostTick of
+                Nothing -> return ()
+                Just postTick ->
+                  do
+                    (SDL.clear r >> render r postTick >> SDL.present r)
+                    end <- SDL.ticks
+                    regulateFPS fps start end
+                    unless (SDL.QuitEvent `elem` events) (loop postTick)
 
 -- | Will wait until ticks pass
 regulateFPS :: Word32 -> Word32 -> Word32 -> IO ()

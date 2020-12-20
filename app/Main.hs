@@ -133,53 +133,59 @@ loadAssets r =
     <*> loadSoundAssets
     <*> loadTextAssets r
 
-input :: SDL.EventPayload -> MainState -> IO (MainState, Bool)
+input :: SDL.EventPayload -> MainState -> IO (Maybe MainState)
 input ev ms =
   case ms ^. mainPhase of
     Intro is ->
       do
         newPhase <- inputIntro ev (ms ^. gameAssets) is
-        return (ms & mainPhase .~ newPhase, True)
+        return (Just $ ms & mainPhase .~ newPhase)
     MainMenu mms ->
       do
-        (newPhase, keepRunning) <- inputMainMenu ev (ms ^. gameAssets) mms
-        return (ms & mainPhase .~ newPhase, keepRunning)
+        maybeNewPhase <- inputMainMenu ev (ms ^. gameAssets) mms
+        case maybeNewPhase of
+          Nothing -> return Nothing
+          Just newPhase ->
+            return (Just $ ms & mainPhase .~ newPhase)
     Paused ps ->
       do
-        (newPhase, keepRunning) <- inputPaused ev (ms ^. gameAssets) ps
-        return (ms & mainPhase .~ newPhase, keepRunning)
+        maybeNewPhase <- inputPaused ev (ms ^. gameAssets) ps
+        case maybeNewPhase of
+          Nothing -> return Nothing
+          Just newPhase ->
+            return (Just $ ms & mainPhase .~ newPhase)
     CountingDown cds ->
       do
         newPhase <- inputCountingDown ev (ms ^. gameAssets) cds
-        return (ms & mainPhase .~ newPhase, True)
+        return (Just $ ms & mainPhase .~ newPhase)
     Game gs ->
       do
         newPhase <- inputGame ev (ms ^. gameAssets) gs
-        return (ms & mainPhase .~ newPhase, True)
+        return (Just $ ms & mainPhase .~ newPhase)
 
-tick :: Double -> MainState -> IO (MainState, Bool)
+tick :: Double -> MainState -> IO (Maybe MainState)
 tick dt ms =
   case ms ^. mainPhase of
     Intro is ->
       do
         newPhase <- tickIntro dt (ms ^. gameAssets) is
-        return (ms & mainPhase .~ newPhase, True)
+        return (Just $ ms & mainPhase .~ newPhase)
     MainMenu mms ->
       do
         newPhase <- tickMainMenu dt mms
-        return (ms & mainPhase .~ newPhase, True)
+        return (Just $ ms & mainPhase .~ newPhase)
     Paused ps ->
       do
         newPhase <- tickPaused dt ps
-        return (ms & mainPhase .~ newPhase, True)
+        return (Just $ ms & mainPhase .~ newPhase)
     CountingDown cds ->
       do
         newPhase <- tickCountingDown dt (ms ^. gameAssets) cds
-        return (ms & mainPhase .~ newPhase, True)
+        return (Just $ ms & mainPhase .~ newPhase)
     Game gs ->
       do
         newPhase <- tickGame dt (ms ^. gameAssets) gs
-        return (ms & mainPhase .~ newPhase, True)
+        return (Just $ ms & mainPhase .~ newPhase)
 
 render :: SDL.Renderer -> MainState -> IO ()
 render renderer ms =

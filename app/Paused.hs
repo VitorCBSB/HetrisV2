@@ -15,7 +15,7 @@ import qualified SDL
 import Types
 import UtilsSDL (renderTextCentered)
 
-inputPaused :: SDL.EventPayload -> Assets -> PauseState -> IO (MainStatePhase, Bool)
+inputPaused :: SDL.EventPayload -> Assets -> PauseState -> IO (Maybe MainStatePhase)
 inputPaused ev assets ps =
   case ev of
     SDL.KeyboardEvent (SDL.KeyboardEventData _ motion repeat keySym)
@@ -27,32 +27,32 @@ inputPaused ev assets ps =
         do
           let (initCountdown, countSfx) = initialCountingDownState (assets ^. soundAssets) (ps ^. backgroundGS)
           applySideEffect countSfx
-          return (CountingDown initCountdown, True)
+          return (Just $ CountingDown initCountdown)
       -- Restart game
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (ps ^. selectedOption == RestartGame) ->
         do
           let initGS = initialGameState (ps ^. backgroundGS . rand)
           let (initCountdown, countSfx) = initialCountingDownState (assets ^. soundAssets) initGS
           applySideEffect countSfx
-          return (CountingDown initCountdown, True)
+          return (Just $ CountingDown initCountdown)
       -- Return to main menu
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (ps ^. selectedOption == BackToMainMenu) ->
-        return (MainMenu initialMainMenuState, True)
+        return (Just $ MainMenu initialMainMenuState)
       -- Quit game
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (ps ^. selectedOption == PauseQuitGame) ->
-        return (Paused ps, False)
+        return Nothing
       -- Select down
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeDown ->
         do
           applySideEffect (PlayAudio (assets ^. soundAssets . menuSelectSfx))
-          return (Paused (ps & selectedOption %~ selectDown), True)
+          return (Just $ Paused (ps & selectedOption %~ selectDown))
       -- Select up
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeUp ->
         do
           applySideEffect (PlayAudio (assets ^. soundAssets . menuSelectSfx))
-          return (Paused (ps & selectedOption %~ selectUp), True)
-      | otherwise -> return (Paused ps, True)
-    _ -> return (Paused ps, True)
+          return (Just $ Paused (ps & selectedOption %~ selectUp))
+      | otherwise -> return (Just $ Paused ps)
+    _ -> return (Just $ Paused ps)
 
 selectDown :: PauseOption -> PauseOption
 selectDown ResumeGame = RestartGame
