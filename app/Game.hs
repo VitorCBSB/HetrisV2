@@ -298,7 +298,7 @@ tickGame' dt assets gs =
             then
               let newBoard = foldl' dropLine (postTextsGs ^. board) [0 .. fieldHeight - 1]
                   (newGS, sideEffects) = sendNextTetromino False assets (postTextsGs {_board = newBoard})
-                  sideEffects' = sideEffects <> if newBoard == (newGS ^. board) then [] else [PlayAudio (assets ^. soundAssets . lineDropSfx)]
+                  sideEffects' = sideEffects <> if newBoard == (postTextsGs ^. board) then [] else [PlayAudio (assets ^. soundAssets . lineDropSfx)]
                in return (Game newGS, sideEffects')
             else return (Game $ postTextsGs & phase .~ ClearingLines (t + dt), [])
         Defeat t -> return (Game $ postTextsGs & phase .~ Defeat (t + dt), [])
