@@ -31,8 +31,8 @@ inputMainMenu ev assets mms =
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == Help) ->
         return (Just $ MainMenu mms)
       -- Credits screen
-      | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == Credits) ->
-        return (Just $ MainMenu mms)
+      | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == CreditsOption) ->
+        return (Just Credits)
       -- Quit game
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == MainQuitGame) ->
         return Nothing
@@ -51,15 +51,15 @@ inputMainMenu ev assets mms =
 
 selectDown :: MainMenuOption -> MainMenuOption
 selectDown Marathon = Help
-selectDown Help = Credits
-selectDown Credits = MainQuitGame
+selectDown Help = CreditsOption
+selectDown CreditsOption = MainQuitGame
 selectDown MainQuitGame = Marathon
 
 selectUp :: MainMenuOption -> MainMenuOption
 selectUp Marathon = MainQuitGame
 selectUp Help = Marathon
-selectUp Credits = Help
-selectUp MainQuitGame = Credits
+selectUp CreditsOption = Help
+selectUp MainQuitGame = CreditsOption
 
 tickMainMenu :: Double -> MainMenuState -> IO MainStatePhase
 tickMainMenu _ mms = return (MainMenu mms)
@@ -75,5 +75,5 @@ renderMainMenu renderer assets mms =
   where
     marathonText = if mms ^. mainMenuSelectedOption == Marathon then "-- Marathon --" else "Marathon"
     helpText = if mms ^. mainMenuSelectedOption == Help then "-- Help --" else "Help"
-    creditsText = if mms ^. mainMenuSelectedOption == Credits then "-- Credits --" else "Credits"
+    creditsText = if mms ^. mainMenuSelectedOption == CreditsOption then "-- Credits --" else "Credits"
     quitText = if mms ^. mainMenuSelectedOption == MainQuitGame then "-- Quit --" else "Quit"

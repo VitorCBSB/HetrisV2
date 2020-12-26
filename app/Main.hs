@@ -5,6 +5,7 @@ module Main where
 import Constants (windowSize)
 import Control.Lens
 import CountingDown
+import Credits
 import Game
 import InitialStates
 import Intro
@@ -147,6 +148,10 @@ input ev ms =
           Nothing -> return Nothing
           Just newPhase ->
             return (Just $ ms & mainPhase .~ newPhase)
+    Credits ->
+      do
+        newPhase <- inputCredits ev
+        return (Just $ ms & mainPhase .~ newPhase)
     Paused ps ->
       do
         maybeNewPhase <- inputPaused ev (ms ^. gameAssets) ps
@@ -174,6 +179,10 @@ tick dt ms =
       do
         newPhase <- tickMainMenu dt mms
         return (Just $ ms & mainPhase .~ newPhase)
+    Credits ->
+      do
+        newPhase <- tickCredits dt
+        return (Just $ ms & mainPhase .~ newPhase)
     Paused ps ->
       do
         newPhase <- tickPaused dt ps
@@ -192,6 +201,7 @@ render renderer ms =
   case ms ^. mainPhase of
     Intro is -> renderIntro renderer (ms ^. gameAssets) is
     MainMenu mms -> renderMainMenu renderer (ms ^. gameAssets) mms
+    Credits -> renderCredits renderer (ms ^. gameAssets)
     Paused ps -> renderPaused renderer (ms ^. gameAssets) ps
     CountingDown cds -> renderCountingDown renderer (ms ^. gameAssets) cds
     Game gs -> renderGame renderer (ms ^. gameAssets) gs
