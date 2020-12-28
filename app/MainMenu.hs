@@ -28,8 +28,8 @@ inputMainMenu ev assets mms =
           applySideEffect countSideEffect
           return (Just $ CountingDown initCountdown)
       -- Help screen
-      | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == Help) ->
-        return (Just $ MainMenu mms)
+      | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == HelpOption) ->
+        return (Just Help)
       -- Credits screen
       | motion == SDL.Pressed && SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == CreditsOption) ->
         return (Just Credits)
@@ -50,15 +50,15 @@ inputMainMenu ev assets mms =
     _ -> return (Just $ MainMenu mms)
 
 selectDown :: MainMenuOption -> MainMenuOption
-selectDown Marathon = Help
-selectDown Help = CreditsOption
+selectDown Marathon = HelpOption
+selectDown HelpOption = CreditsOption
 selectDown CreditsOption = MainQuitGame
 selectDown MainQuitGame = Marathon
 
 selectUp :: MainMenuOption -> MainMenuOption
 selectUp Marathon = MainQuitGame
-selectUp Help = Marathon
-selectUp CreditsOption = Help
+selectUp HelpOption = Marathon
+selectUp CreditsOption = HelpOption
 selectUp MainQuitGame = CreditsOption
 
 tickMainMenu :: Double -> MainMenuState -> IO MainStatePhase
@@ -74,6 +74,6 @@ renderMainMenu renderer assets mms =
     renderTextCentered (assets ^. textAssets . font) renderer quitText (windowSize ^. _1 `div` 2, (windowSize ^. _2 `div` 3 * 2 + 24))
   where
     marathonText = if mms ^. mainMenuSelectedOption == Marathon then "-- Marathon --" else "Marathon"
-    helpText = if mms ^. mainMenuSelectedOption == Help then "-- Help --" else "Help"
+    helpText = if mms ^. mainMenuSelectedOption == HelpOption then "-- Help --" else "Help"
     creditsText = if mms ^. mainMenuSelectedOption == CreditsOption then "-- Credits --" else "Credits"
     quitText = if mms ^. mainMenuSelectedOption == MainQuitGame then "-- Quit --" else "Quit"

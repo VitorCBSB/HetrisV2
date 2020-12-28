@@ -6,6 +6,7 @@ import Constants (windowSize)
 import Control.Lens
 import CountingDown
 import Credits
+import Help
 import Game
 import InitialStates
 import Intro
@@ -152,6 +153,10 @@ input ev ms =
       do
         newPhase <- inputCredits ev
         return (Just $ ms & mainPhase .~ newPhase)
+    Help ->
+      do
+        newPhase <- inputHelp ev
+        return (Just $ ms & mainPhase .~ newPhase)
     Paused ps ->
       do
         maybeNewPhase <- inputPaused ev (ms ^. gameAssets) ps
@@ -183,6 +188,10 @@ tick dt ms =
       do
         newPhase <- tickCredits dt
         return (Just $ ms & mainPhase .~ newPhase)
+    Help ->
+      do
+        newPhase <- tickHelp dt
+        return (Just $ ms & mainPhase .~ newPhase)
     Paused ps ->
       do
         newPhase <- tickPaused dt ps
@@ -202,6 +211,7 @@ render renderer ms =
     Intro is -> renderIntro renderer (ms ^. gameAssets) is
     MainMenu mms -> renderMainMenu renderer (ms ^. gameAssets) mms
     Credits -> renderCredits renderer (ms ^. gameAssets)
+    Help -> renderHelp renderer (ms ^. gameAssets)
     Paused ps -> renderPaused renderer (ms ^. gameAssets) ps
     CountingDown cds -> renderCountingDown renderer (ms ^. gameAssets) cds
     Game gs -> renderGame renderer (ms ^. gameAssets) gs

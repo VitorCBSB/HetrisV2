@@ -18,7 +18,7 @@ Make sure SDL2 is installed on your machine or compilation will fail. To do so o
 
 ## Controls
 
-Since I don't have a _Help_ screen yet, they are as follows (taken from the [guideline](https://tetris.fandom.com/wiki/Tetris_Guideline)):
+Taken from the [guideline](https://tetris.fandom.com/wiki/Tetris_Guideline)
 
 - Up arrow and X: rotate 90° clockwise
 - Space: hard drop
@@ -28,13 +28,14 @@ Since I don't have a _Help_ screen yet, they are as follows (taken from the [gui
 - Left and right arrows: movement
 - Down arrow: soft drop and lock delay cancel.
 
+This is also present on the game's Help screen (located in its main menu).
+
 ## Missing Features
 
 The game is still not completely implemented, a few things are missing from the guideline, specifically:
 
 - _Korobeiniki_ (and other music) while the game runs.
 - Different modes, like _marathon_ and _ultra_ modes.
-- A main menu from which you can customize things and choose the aforementioned modes.
 - Polishing in general.
 
 Feel free to open issues (or PRs) about any non-compliance you find.
@@ -49,13 +50,15 @@ The `Types` module contains all relevant types used for the game. If you want to
 
 As for the actual code organization, as I mentioned before, I really like [Gloss's](https://hackage.haskell.org/package/gloss) API. So much so, in fact, that I made something similar to its `play` function and adapted it to be used with SDL2. It's called `mainLoop` (located in the `UtilsSDL` module). For those who are not familiar with that, it basically means that our `mainLoop` takes a bunch of arguments, the most important of which are:
 
-- An input function that changes the state of our game in response to things like keyboard presses and mouse movement, with the type: `SDL.EventPayload -> world -> IO world`
-- A tick function which has a delta time argument, which changes the state of our game in response to time, with the type: `Double -> world -> IO world`
+- An input function that changes the state of our game in response to things like keyboard presses and mouse movement, with the type: `SDL.EventPayload -> world -> IO (Maybe world)`
+- A tick function which has a delta time argument, which changes the state of our game in response to time, with the type: `Double -> world -> IO (Maybe world)`
 - A render function, responsible for printing the current state of our game to the screen, with the type: `SDL.Renderer -> world -> IO ()`
 
-`world` in that context is a type variable. In the case of our game `world = MainState` (as defined in the `Types` module). Their definitions can be found inside the `Main` module.
+`world` in that context is a type variable. The `input` and `tick` functions both use `Maybe` to indicate whether the game should be closed by returning `Nothing` or keep running by returning a new `world`.
 
-Speaking of `MainState`, it contains all assets loaded at startup as well as a sum type that controls the current "context" of the game (I called it `mainPhase` but it probably deserves a more fitting name). For instance, this is what it looks like:
+In the case of our game `world = MainState` (as defined in the `Types` module). The `input`, `tick` and `render` function declarations that run our game can be found inside the `Main` module.
+
+Speaking of `MainState`, it contains all assets loaded at startup as well as a sum type that controls the current "context" of the game (I called it `mainPhase` but it probably deserves a more fitting name). This is what that sum type looks like:
 
 ```
 data MainStatePhase

@@ -164,13 +164,14 @@ data MainStatePhase
   = Intro IntroState
   | MainMenu MainMenuState
   | Credits
+  | Help
   | CountingDown CountingDownState
   | Game GameState
   | Paused PauseState
 
 data MainMenuOption
   = Marathon
-  | Help
+  | HelpOption
   | CreditsOption
   | MainQuitGame
   deriving (Eq)

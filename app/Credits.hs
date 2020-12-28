@@ -36,8 +36,7 @@ renderCredits renderer assets =
     renderTextCentered (assets ^. textAssets . font) renderer "Luis Fernando (Wizky)" ((windowSize ^. _1) `div` 2, baseY + 360)
     renderTextCentered (assets ^. textAssets . font) renderer "The /r/haskell subreddit" ((windowSize ^. _1) `div` 2, baseY + 384)
     renderTextCentered (assets ^. textAssets . font) renderer "The /r/haskellgamedev subreddit" ((windowSize ^. _1) `div` 2, baseY + 408)
-    renderTextCentered (assets ^. textAssets . font) renderer "The P100Pao discord" ((windowSize ^. _1) `div` 2, baseY + 432)
-    renderTextCentered (assets ^. textAssets . font) renderer "You :)" ((windowSize ^. _1) `div` 2, baseY + 456)
+    renderTextCentered (assets ^. textAssets . font) renderer "You :)" ((windowSize ^. _1) `div` 2, baseY + 432)
     renderTextCentered (assets ^. textAssets . font) renderer "Press any key to return to the main menu." ((windowSize ^. _1) `div` 2, baseY + 650)
   where
     baseY = 50

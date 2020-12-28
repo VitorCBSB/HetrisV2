@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5a761e4cd6d6d08fba65c3ba89fc7ce4d266952fb92c19824dbcfda0c7d4f29f
+-- hash: 3601e7f66dd759935824bd30dfcc1c894eb004e07a1961df1006e6ff285f9e7d
 
 name:           HetrisV2
 version:        0.1.0.0
@@ -33,6 +33,7 @@ executable HetrisV2-exe
       Credits
       FloatingText
       Game
+      Help
       InitialStates
       Intro
       MainMenu
