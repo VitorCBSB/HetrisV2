@@ -24,7 +24,7 @@ inputMainMenu ev assets mms =
         do
           rand <- randomIO
           let initGameState = initialGameState (mkStdGen rand)
-          let (initCountdown, countSideEffect) = initialCountingDownState (assets ^. soundAssets) initGameState
+          let (initCountdown, countSideEffect) = initialCountingDownState (assets ^. soundAssets) initGameState False
           applySideEffect countSideEffect
           return (Just $ CountingDown initCountdown)
       -- Help screen

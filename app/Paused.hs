@@ -23,14 +23,14 @@ inputPaused ev assets ps =
       | SDL.keysymScancode keySym == SDL.ScancodeEscape
           || SDL.keysymScancode keySym == SDL.ScancodeReturn && (ps ^. selectedOption) == ResumeGame ->
         do
-          let (initCountdown, countSfx) = initialCountingDownState (assets ^. soundAssets) (ps ^. backgroundGS)
+          let (initCountdown, countSfx) = initialCountingDownState (assets ^. soundAssets) (ps ^. backgroundGS) True
           applySideEffect countSfx
           return (Just $ CountingDown initCountdown)
       -- Restart game
       | SDL.keysymScancode keySym == SDL.ScancodeReturn && (ps ^. selectedOption == RestartGame) ->
         do
           let initGS = initialGameState (ps ^. backgroundGS . rand)
-          let (initCountdown, countSfx) = initialCountingDownState (assets ^. soundAssets) initGS
+          let (initCountdown, countSfx) = initialCountingDownState (assets ^. soundAssets) initGS False
           applySideEffect countSfx
           return (Just $ CountingDown initCountdown)
       -- Return to main menu

@@ -19,13 +19,13 @@ initialIntroState = IntroState 0
 initialMainMenuState :: MainMenuState
 initialMainMenuState = MainMenuState Marathon
 
-initialCountingDownState :: SoundAssets -> GameState -> (CountingDownState, SideEffect)
-initialCountingDownState soundAssets gs =
-  (CountingDownState gs 3 0, PlayAudio (soundAssets ^. countdownSfx))
+initialCountingDownState :: SoundAssets -> GameState -> Bool -> (CountingDownState, SideEffect)
+initialCountingDownState soundAssets gs fromPause =
+  (CountingDownState gs 3 0 fromPause, PlayAudio (soundAssets ^. countdownSfx))
 
-initialPauseState :: SoundAssets -> GameState -> (PauseState, SideEffect)
+initialPauseState :: SoundAssets -> GameState -> (PauseState, [SideEffect])
 initialPauseState soundAssets gs =
-  (PauseState gs ResumeGame, PlayAudio (soundAssets ^. pauseSfx))
+  (PauseState gs ResumeGame, [PlayAudio (soundAssets ^. pauseSfx), PauseMusic])
 
 initialGameState :: StdGen -> GameState
 initialGameState initRand =

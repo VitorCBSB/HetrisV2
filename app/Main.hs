@@ -6,8 +6,8 @@ import Constants (windowSize)
 import Control.Lens
 import CountingDown
 import Credits
-import Help
 import Game
+import Help
 import InitialStates
 import Intro
 import MainMenu
@@ -34,6 +34,7 @@ initialMainState (_, r) =
   do
     ass <- loadAssets r
     Mixer.setVolume 10 Mixer.AllChannels
+    Mixer.setMusicVolume 10
     let initGameState = initialIntroState
     return
       MainState
@@ -57,6 +58,7 @@ loadSoundAssets =
     levelUp <- Mixer.load "assets/sfx/levelup.wav"
     countdown <- Mixer.load "assets/sfx/countdown.wav"
     countdownGo <- Mixer.load "assets/sfx/countdowngo.wav"
+    korobeinikiMusic <- Mixer.load "assets/sfx/korobeiniki.ogg"
     return
       SoundAssets
         { _hitWallSfx = hitWall,
@@ -71,7 +73,8 @@ loadSoundAssets =
           _menuSelectSfx = menuSelect,
           _levelUpSfx = levelUp,
           _countdownSfx = countdown,
-          _countdownGoSfx = countdownGo
+          _countdownGoSfx = countdownGo,
+          _korobeiniki = korobeinikiMusic
         }
 
 loadImageAssets :: SDL.Renderer -> IO ImageAssets

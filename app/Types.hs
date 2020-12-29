@@ -28,6 +28,7 @@ module Types
     levelUpSfx,
     countdownSfx,
     countdownGoSfx,
+    korobeiniki,
     -- Text assets and lenses
     TextAssets (..),
     font,
@@ -84,6 +85,7 @@ module Types
     gameStateToReturnTo,
     countdown,
     countdownTime,
+    fromPause,
     -- Intro state
     IntroState (..),
     introTime,
@@ -135,7 +137,8 @@ data SoundAssets = SoundAssets
     _menuSelectSfx :: Mixer.Chunk,
     _levelUpSfx :: Mixer.Chunk,
     _countdownSfx :: Mixer.Chunk,
-    _countdownGoSfx :: Mixer.Chunk
+    _countdownGoSfx :: Mixer.Chunk,
+    _korobeiniki :: Mixer.Music
   }
 
 data TextAssets = TextAssets
@@ -187,7 +190,8 @@ data IntroState = IntroState
 data CountingDownState = CountingDownState
   { _gameStateToReturnTo :: GameState,
     _countdown :: Int,
-    _countdownTime :: Double
+    _countdownTime :: Double,
+    _fromPause :: Bool
   }
 
 data PauseOption
@@ -253,6 +257,10 @@ data PlacingState = PlacingState
 
 data SideEffect
   = PlayAudio Mixer.Chunk
+  | PlayMusic Mixer.Times Mixer.Music
+  | PauseMusic
+  | ResumeMusic
+  | HaltMusic
 
 data TetrominoShape
   = L
@@ -311,3 +319,7 @@ interpretEffects act =
 
 applySideEffect :: SideEffect -> IO ()
 applySideEffect (PlayAudio chunk) = Mixer.play chunk
+applySideEffect (PlayMusic times music) = Mixer.playMusic times music
+applySideEffect PauseMusic = Mixer.pauseMusic
+applySideEffect ResumeMusic = Mixer.resumeMusic
+applySideEffect HaltMusic = Mixer.haltMusic

@@ -11,6 +11,7 @@ import qualified Data.Text as T
 import Game (renderGame)
 import InitialStates (initialPauseState)
 import qualified SDL
+import qualified SDL.Mixer as Mixer
 import Types
 import UtilsSDL (renderTextCentered)
 
@@ -21,7 +22,7 @@ inputCountingDown ev gameAssets cds =
       if SDL.keyboardEventKeyMotion evData == SDL.Pressed && ((SDL.keysymScancode . SDL.keyboardEventKeysym) evData == SDL.ScancodeEscape || (SDL.keysymScancode . SDL.keyboardEventKeysym) evData == SDL.ScancodeF1)
         then do
           let (initPauseState, pauseSfx) = initialPauseState (gameAssets ^. soundAssets) (cds ^. gameStateToReturnTo)
-          applySideEffect pauseSfx
+          mapM_ applySideEffect pauseSfx
           return $ Paused initPauseState
         else return $ CountingDown cds
     _ -> return (CountingDown cds)
@@ -33,6 +34,7 @@ tickCountingDown dt assets cds =
       if cds ^. countdown <= 1
         then do
           applySideEffect (PlayAudio (assets ^. soundAssets . countdownGoSfx))
+          applySideEffect (if cds ^. fromPause then ResumeMusic else PlayMusic Mixer.Forever (assets ^. soundAssets . korobeiniki))
           return $ Game (cds ^. gameStateToReturnTo)
         else do
           applySideEffect (PlayAudio (assets ^. soundAssets . countdownSfx))

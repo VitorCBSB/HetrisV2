@@ -87,7 +87,7 @@ inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
       | (SDL.keysymScancode keySym == SDL.ScancodeEscape || SDL.keysymScancode keySym == SDL.ScancodeF1) && not repeat ->
         let newGS = gs & wantsToSoftDrop .~ False
             (pauseState, pauseSfx) = initialPauseState (assets ^. soundAssets) newGS
-         in return (Paused pauseState, [pauseSfx])
+         in return (Paused pauseState, pauseSfx)
       | otherwise -> return (Game gs, [])
     ClearingLines _ ->
       -- Pause
@@ -96,13 +96,13 @@ inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
         then
           let newGS = gs & wantsToSoftDrop .~ False
               (pauseState, pauseSfx) = initialPauseState (assets ^. soundAssets) newGS
-           in return (Paused pauseState, [pauseSfx])
+           in return (Paused pauseState, pauseSfx)
         else return (Game gs, [])
     Defeat t ->
       -- "Enter" to restart the game
       if t >= timeToRestart && SDL.keysymScancode keySym == SDL.ScancodeReturn && not repeat
         then do
-          let (initCountdown, countSfx) = initialCountingDownState (assets ^. soundAssets) (initialGameState (gs ^. rand))
+          let (initCountdown, countSfx) = initialCountingDownState (assets ^. soundAssets) (initialGameState (gs ^. rand)) False
           applySideEffect countSfx
           return (CountingDown initCountdown, [])
         else return (Game gs, [])
