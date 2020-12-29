@@ -34,7 +34,6 @@ This is also present on the game's Help screen (located in its main menu).
 
 The game is still not completely implemented, a few things are missing from the guideline, specifically:
 
-- _Korobeiniki_ (and other music) while the game runs.
 - Different modes, like _marathon_ and _ultra_ modes.
 - Polishing in general.
 
