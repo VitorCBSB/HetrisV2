@@ -371,7 +371,7 @@ sendNextTetromino fromHeld assets gs =
             _nextTetrominoBag = newBag,
             _rand = newRand
           },
-        if defeated then [PlayAudio (assets ^. soundAssets . defeatSfx)] else []
+        if defeated then [PlayAudio (assets ^. soundAssets . defeatSfx), HaltMusic] else []
       )
 
 levelFromLinesCleared :: Int -> TetrisLevel
@@ -488,7 +488,7 @@ lockPiece ps assets gs =
       scoreOffsetX = -30
       defeated = all (\(i, _) -> i >= visibleFieldHeight) blockPos
    in if defeated
-        then (gs & phase .~ Defeat 0, [PlayAudio (assets ^. soundAssets . defeatSfx)])
+        then (gs & phase .~ Defeat 0, [PlayAudio (assets ^. soundAssets . defeatSfx), HaltMusic])
         else
           if not (null linesToClear)
             then
