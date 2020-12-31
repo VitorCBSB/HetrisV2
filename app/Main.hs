@@ -7,6 +7,7 @@ import Control.Lens
 import CountingDown
 import Credits
 import Game
+import GameOver
 import Help
 import InitialStates
 import Intro
@@ -175,6 +176,10 @@ input ev ms =
       do
         newPhase <- inputGame ev (ms ^. gameAssets) gs
         return (Just $ ms & mainPhase .~ newPhase)
+    GameOver gos ->
+      do
+        newPhase <- inputGameOver ev (ms ^. gameAssets) gos
+        return (Just $ ms & mainPhase .~ newPhase)
 
 tick :: Double -> MainState -> IO (Maybe MainState)
 tick dt ms =
@@ -207,6 +212,10 @@ tick dt ms =
       do
         newPhase <- tickGame dt (ms ^. gameAssets) gs
         return (Just $ ms & mainPhase .~ newPhase)
+    GameOver gos ->
+      do
+        newPhase <- tickGameOver dt gos
+        return (Just $ ms & mainPhase .~ newPhase)
 
 render :: SDL.Renderer -> MainState -> IO ()
 render renderer ms =
@@ -218,3 +227,4 @@ render renderer ms =
     Paused ps -> renderPaused renderer (ms ^. gameAssets) ps
     CountingDown cds -> renderCountingDown renderer (ms ^. gameAssets) cds
     Game gs -> renderGame renderer (ms ^. gameAssets) gs
+    GameOver gos -> renderGameOver renderer (ms ^. gameAssets) gos

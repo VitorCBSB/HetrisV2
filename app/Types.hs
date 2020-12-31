@@ -99,6 +99,11 @@ module Types
     pos,
     shape,
     rotation,
+    -- Game over state, includes statistics
+    GameOverState (..),
+    GameOverPhase (..),
+    finishedGame,
+    gameOverPhase,
   )
 where
 
@@ -170,10 +175,11 @@ data MainStatePhase
   | Help
   | CountingDown CountingDownState
   | Game GameState
+  | GameOver GameOverState
   | Paused PauseState
 
 data MainMenuOption
-  = Marathon
+  = Endless
   | HelpOption
   | CreditsOption
   | MainQuitGame
@@ -221,6 +227,16 @@ data GameState = GameState
     _floatingTexts :: [FloatingText]
   }
 
+data GameOverPhase
+  = GameOverText Double -- Time
+  | Sliding Double -- Time
+  | Statistics Double Int -- Time and how many lines of statistics to show.
+
+data GameOverState = GameOverState
+  { _finishedGame :: GameState,
+    _gameOverPhase :: GameOverPhase
+  }
+
 data LockType
   = NormalLock
   | TSpinLock
@@ -245,7 +261,6 @@ data LineClear
 data GamePhase
   = Placing PlacingState
   | ClearingLines Double -- Time
-  | Defeat Double -- Time
 
 data PlacingState = PlacingState
   { _tetromino :: Tetromino,
@@ -295,6 +310,7 @@ $(makeLenses ''IntroState)
 $(makeLenses ''PauseState)
 $(makeLenses ''MainMenuState)
 $(makeLenses ''PlacingState)
+$(makeLenses ''GameOverState)
 $(makeLenses ''Tetromino)
 $(makeLenses ''ImageAssets)
 $(makeLenses ''SoundAssets)

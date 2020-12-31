@@ -67,13 +67,15 @@ inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
       | SDL.keysymScancode keySym == SDL.ScancodeDown && not repeat ->
         case placingState ^. lockingTime of
           Nothing -> return (Game $ gs & wantsToSoftDrop .~ True, [])
-          Just _ -> return $ lockPiece placingState assets gs & _1 %~ Game
+          Just _ -> return $ lockPiece placingState assets gs
       -- Hold piece
       | (SDL.keysymScancode keySym == SDL.ScancodeC || SDL.keysymScancode keySym == SDL.ScancodeLShift) && not repeat && not (placingState ^. fromHeld) ->
         case gs ^. heldPiece of
           Nothing ->
-            let (newGS, sideEffects) = sendNextTetromino True assets gs
-             in return (Game $ newGS {_heldPiece = Just (placingState ^. tetromino . shape)}, sideEffects)
+            let (newPhase, sideEffects) = sendNextTetromino True assets gs
+             in case newPhase of
+                  Game gs' -> return (Game $ gs' {_heldPiece = Just (placingState ^. tetromino . shape)}, sideEffects)
+                  _ -> return (newPhase, sideEffects)
           Just ts ->
             return
               ( Game $
@@ -97,14 +99,6 @@ inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
           let newGS = gs & wantsToSoftDrop .~ False
               (pauseState, pauseSfx) = initialPauseState (assets ^. soundAssets) newGS
            in return (Paused pauseState, pauseSfx)
-        else return (Game gs, [])
-    Defeat t ->
-      -- "Enter" to restart the game
-      if t >= timeToRestart && SDL.keysymScancode keySym == SDL.ScancodeReturn && not repeat
-        then do
-          let (initCountdown, countSfx) = initialCountingDownState (assets ^. soundAssets) (initialGameState (gs ^. rand)) False
-          applySideEffect countSfx
-          return (CountingDown initCountdown, [])
         else return (Game gs, [])
 
 inputRelease :: SDL.KeyboardEventData -> GameState -> IO (MainStatePhase, [SideEffect])
@@ -292,16 +286,15 @@ tickGame' :: Double -> Assets -> GameState -> IO (MainStatePhase, [SideEffect])
 tickGame' dt assets gs =
   let postTextsGs = gs & floatingTexts .~ mapMaybe (tickFloatingText dt) (gs ^. floatingTexts)
    in case postTextsGs ^. phase of
-        Placing placingState -> return $ tickPlacingState placingState dt assets postTextsGs & _1 %~ Game
+        Placing placingState -> return $ tickPlacingState placingState dt assets postTextsGs
         ClearingLines t ->
           if t >= clearingLinesTime
             then
               let newBoard = foldl' dropLine (postTextsGs ^. board) [0 .. fieldHeight - 1]
-                  (newGS, sideEffects) = sendNextTetromino False assets (postTextsGs {_board = newBoard})
+                  (newPhase, sideEffects) = sendNextTetromino False assets (postTextsGs {_board = newBoard})
                   sideEffects' = sideEffects <> if newBoard == (postTextsGs ^. board) then [] else [PlayAudio (assets ^. soundAssets . lineDropSfx)]
-               in return (Game newGS, sideEffects')
+               in return (newPhase, sideEffects')
             else return (Game $ postTextsGs & phase .~ ClearingLines (t + dt), [])
-        Defeat t -> return (Game $ postTextsGs & phase .~ Defeat (t + dt), [])
 
 dropLine :: Board -> Int -> Board
 dropLine board row =
@@ -342,7 +335,9 @@ shiftTetrominoDown board tetromino =
       newTetromino = if shiftedIsObstructed then tetromino else shiftedTetromino
    in (newTetromino, not shiftedIsObstructed)
 
-sendNextTetromino :: Bool -> Assets -> GameState -> (GameState, [SideEffect])
+-- Spawn the next piece to be sent. Returns MainStatePhase because this can make us lose game
+-- if a piece spawns overlapping a block.
+sendNextTetromino :: Bool -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 sendNextTetromino fromHeld assets gs =
   -- Generate a new bag if the one we have has been emptied
   let (Just ns6, mns7, mns8, mns9, mns10, mns11, mns12) = (gs ^. nextTetrominoBag)
@@ -362,17 +357,21 @@ sendNextTetromino fromHeld assets gs =
           then Nothing
           else Just 0
       newPhase =
-        if defeated
-          then Defeat 0
-          else Placing (PlacingState newTetromino fromHeld newLockingTime 0 0)
-   in ( gs
-          { _phase = newPhase,
-            _nextShapes = newNextShapes,
-            _nextTetrominoBag = newBag,
-            _rand = newRand
-          },
-        if defeated then [PlayAudio (assets ^. soundAssets . defeatSfx), HaltMusic] else []
-      )
+        Placing (PlacingState newTetromino fromHeld newLockingTime 0 0)
+   in if defeated
+        then
+          let (initGameOver, sideEffs) = initialGameOverState (assets ^. soundAssets) gs
+           in (GameOver initGameOver, sideEffs)
+        else
+          ( Game $
+              gs
+                { _phase = newPhase,
+                  _nextShapes = newNextShapes,
+                  _nextTetrominoBag = newBag,
+                  _rand = newRand
+                },
+            if defeated then [PlayAudio (assets ^. soundAssets . defeatSfx), HaltMusic] else []
+          )
 
 levelFromLinesCleared :: Int -> TetrisLevel
 levelFromLinesCleared linesCleared = TetrisLevel $ linesCleared `div` linesLevelUp
@@ -475,7 +474,9 @@ floatingTextLineClear lc ttl speed (x, y) =
   where
     texts = textFromLineClear lc
 
-lockPiece :: PlacingState -> Assets -> GameState -> (GameState, [SideEffect])
+-- Locks a piece in place. Returns MainStatePhase because this can make us lose the game
+-- if a piece gets locked entirely outside of the board.
+lockPiece :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 lockPiece ps assets gs =
   let (bl1, bl2, bl3, bl4) = relativeBlocksFromRotation (ps ^. tetromino . shape) (ps ^. tetromino . rotation)
       (tetI, tetJ) = ps ^. tetromino . pos
@@ -488,7 +489,9 @@ lockPiece ps assets gs =
       scoreOffsetX = -30
       defeated = all (\(i, _) -> i >= visibleFieldHeight) blockPos
    in if defeated
-        then (gs & phase .~ Defeat 0, [PlayAudio (assets ^. soundAssets . defeatSfx), HaltMusic])
+        then
+          let (initGameOver, sideEffs) = initialGameOverState (assets ^. soundAssets) gs
+           in (GameOver initGameOver, sideEffs)
         else
           if not (null linesToClear)
             then
@@ -514,19 +517,20 @@ lockPiece ps assets gs =
                             makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 548) (T.pack $ show comboScore)
                           ]
                         else []
-               in ( gs
-                      { _board = actualNewBoard,
-                        _phase = newPhase,
-                        _linesCleared = newLinesCleared,
-                        _maybeLastLockClear = Just lineClearType,
-                        _score = newScore,
-                        _floatingTexts = newFloatingTexts,
-                        _comboCount = newComboCount
-                      },
+               in ( Game $
+                      gs
+                        { _board = actualNewBoard,
+                          _phase = newPhase,
+                          _linesCleared = newLinesCleared,
+                          _maybeLastLockClear = Just lineClearType,
+                          _score = newScore,
+                          _floatingTexts = newFloatingTexts,
+                          _comboCount = newComboCount
+                        },
                     levelUpAudio <> [PlayAudio (assets ^. soundAssets . lineClearSfx)]
                   )
             else
-              let (newGS, sideEffects) = sendNextTetromino False assets (gs {_board = newBoard})
+              let (newPhase, sideEffects) = sendNextTetromino False assets (gs {_board = newBoard})
                   lockType = calculateLockType (ps ^. tetromino) (gs ^. board)
                   maybeSpinReward =
                     case lockType of
@@ -540,10 +544,11 @@ lockPiece ps assets gs =
                         [ makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 600) t,
                           makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 648) (T.pack $ show s)
                         ]
-               in ( newGS
-                      & comboCount .~ 0
-                      & score +~ maybe 0 snd maybeSpinReward
-                      & floatingTexts <>~ spinText,
+                  addScore gs_ = gs_ & comboCount .~ 0 & score +~ maybe 0 snd maybeSpinReward & floatingTexts <>~ spinText
+               in ( case newPhase of
+                      Game gs' -> Game $ addScore gs'
+                      GameOver gameOverState -> GameOver $ gameOverState & finishedGame %~ addScore
+                      _ -> newPhase,
                     sideEffects <> [PlayAudio (assets ^. soundAssets . lockedPieceSfx)]
                   )
 
@@ -551,7 +556,7 @@ tetrominoVel :: Bool -> TetrisLevel -> Double
 tetrominoVel wantsToSoftDrop tl =
   if wantsToSoftDrop then softDropSpeed else normalDropSpeed tl
 
-tickPlacingState :: PlacingState -> Double -> Assets -> GameState -> (GameState, [SideEffect])
+tickPlacingState :: PlacingState -> Double -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 tickPlacingState ps dt assets gs =
   -- First thing is check if we're locking a piece. 'Nothing' means we're not.
   case ps ^. lockingTime of
@@ -561,7 +566,7 @@ tickPlacingState ps dt assets gs =
           nextRowPos = currentRow - vel * dt
        in -- This tick did not make us move, just update our position.
           if floor nextRowPos == floor currentRow
-            then (gs & phase .~ Placing (ps & (tetromino . pos . _1) .~ nextRowPos), [])
+            then (Game $ gs & phase .~ Placing (ps & (tetromino . pos . _1) .~ nextRowPos), [])
             else -- Or it did make us move, in which case we check a bunch of things.
 
               let deltaMove = floor currentRow - floor nextRowPos
@@ -587,13 +592,13 @@ tickPlacingState ps dt assets gs =
                         _lockingTime = if newLocking then Just 0 else Nothing,
                         _softDropScore = _softDropScore ps + scoreToAward
                       }
-               in (gs & phase .~ Placing newPs & score +~ scoreToAward, sideEffects)
+               in (Game $ gs & phase .~ Placing newPs & score +~ scoreToAward, sideEffects)
     -- We are locking a piece. Count the time to lock and if it expires, lock it in place
     -- and send a new piece to be placed.
     Just t ->
       if t >= timeToLock
         then lockPiece ps assets gs
-        else (gs & phase .~ Placing (ps & lockingTime ?~ (t + dt)), [])
+        else (Game $ gs & phase .~ Placing (ps & lockingTime ?~ (t + dt)), [])
 
 -- Coordinates are in (line, column) form relative to its axis.
 relativeBlocksFromRotation :: TetrominoShape -> TetrominoRotation -> ((Int, Int), (Int, Int), (Int, Int), (Int, Int))
@@ -664,15 +669,6 @@ renderGame renderer assets gs =
         do
           renderGhostTetromino (assets ^. imageAssets) boardPosition (placingState ^. tetromino) (gs ^. board) renderer
           renderTetromino boardPosition (placingState ^. tetromino) (colorFromShape (assets ^. imageAssets) (placingState ^. tetromino . shape)) renderer
-      Defeat _ ->
-        do
-          renderTextCentered
-            (assets ^. textAssets . font)
-            renderer
-            "GAME OVER"
-            ( windowSize ^. _1 `div` 2,
-              windowSize ^. _2 `div` 2
-            )
       _ -> return ()
     mapM_ (renderFloatingText (assets ^. textAssets . font) renderer) (gs ^. floatingTexts)
   where

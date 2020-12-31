@@ -3,7 +3,8 @@ module InitialStates
     initialPauseState,
     initialGameState,
     initialIntroState,
-    initialMainMenuState
+    initialMainMenuState,
+    initialGameOverState,
   )
 where
 
@@ -17,7 +18,7 @@ initialIntroState :: IntroState
 initialIntroState = IntroState 0
 
 initialMainMenuState :: MainMenuState
-initialMainMenuState = MainMenuState Marathon
+initialMainMenuState = MainMenuState Endless
 
 initialCountingDownState :: SoundAssets -> GameState -> Bool -> (CountingDownState, SideEffect)
 initialCountingDownState soundAssets gs fromPause =
@@ -26,6 +27,10 @@ initialCountingDownState soundAssets gs fromPause =
 initialPauseState :: SoundAssets -> GameState -> (PauseState, [SideEffect])
 initialPauseState soundAssets gs =
   (PauseState gs ResumeGame, [PlayAudio (soundAssets ^. pauseSfx), PauseMusic])
+
+initialGameOverState :: SoundAssets -> GameState -> (GameOverState, [SideEffect])
+initialGameOverState soundAssets gs =
+  (GameOverState gs (GameOverText 0), [PlayAudio (soundAssets ^. defeatSfx), HaltMusic])
 
 initialGameState :: StdGen -> GameState
 initialGameState initRand =

@@ -19,8 +19,8 @@ inputMainMenu :: SDL.EventPayload -> Assets -> MainMenuState -> IO (Maybe MainSt
 inputMainMenu ev assets mms =
   case ev of
     SDL.KeyboardEvent (SDL.KeyboardEventData _ SDL.Pressed repeat keySym)
-      -- New marathon
-      | SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption) == Marathon ->
+      -- New endless
+      | SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption) == Endless ->
         do
           rand <- randomIO
           let initGameState = initialGameState (mkStdGen rand)
@@ -50,14 +50,14 @@ inputMainMenu ev assets mms =
     _ -> return (Just $ MainMenu mms)
 
 selectDown :: MainMenuOption -> MainMenuOption
-selectDown Marathon = HelpOption
+selectDown Endless = HelpOption
 selectDown HelpOption = CreditsOption
 selectDown CreditsOption = MainQuitGame
-selectDown MainQuitGame = Marathon
+selectDown MainQuitGame = Endless
 
 selectUp :: MainMenuOption -> MainMenuOption
-selectUp Marathon = MainQuitGame
-selectUp HelpOption = Marathon
+selectUp Endless = MainQuitGame
+selectUp HelpOption = Endless
 selectUp CreditsOption = HelpOption
 selectUp MainQuitGame = CreditsOption
 
@@ -68,12 +68,12 @@ renderMainMenu :: SDL.Renderer -> Assets -> MainMenuState -> IO ()
 renderMainMenu renderer assets mms =
   do
     renderTextCentered (assets ^. textAssets . font) renderer "Hetris" (windowSize ^. _1 `div` 2, windowSize ^. _2 `div` 6)
-    renderTextCentered (assets ^. textAssets . font) renderer marathonText (windowSize ^. _1 `div` 2, (windowSize ^. _2 `div` 3 * 2 - 48))
+    renderTextCentered (assets ^. textAssets . font) renderer endlessText (windowSize ^. _1 `div` 2, (windowSize ^. _2 `div` 3 * 2 - 48))
     renderTextCentered (assets ^. textAssets . font) renderer helpText (windowSize ^. _1 `div` 2, (windowSize ^. _2 `div` 3 * 2 - 24))
     renderTextCentered (assets ^. textAssets . font) renderer creditsText (windowSize ^. _1 `div` 2, (windowSize ^. _2 `div` 3 * 2))
     renderTextCentered (assets ^. textAssets . font) renderer quitText (windowSize ^. _1 `div` 2, (windowSize ^. _2 `div` 3 * 2 + 24))
   where
-    marathonText = if mms ^. mainMenuSelectedOption == Marathon then "-- Marathon --" else "Marathon"
+    endlessText = if mms ^. mainMenuSelectedOption == Endless then "-- Endless --" else "Endless"
     helpText = if mms ^. mainMenuSelectedOption == HelpOption then "-- Help --" else "Help"
     creditsText = if mms ^. mainMenuSelectedOption == CreditsOption then "-- Credits --" else "Credits"
     quitText = if mms ^. mainMenuSelectedOption == MainQuitGame then "-- Quit --" else "Quit"
