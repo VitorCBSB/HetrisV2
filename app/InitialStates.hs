@@ -11,9 +11,9 @@ where
 import Constants (fieldHeight, fieldWidth)
 import Control.Lens
 import Data.Array
+import qualified SDL.Mixer as Mixer
 import System.Random (StdGen)
 import Types
-import qualified SDL.Mixer as Mixer
 
 initialIntroState :: IntroState
 initialIntroState = IntroState 0
