@@ -13,6 +13,7 @@ import Control.Lens
 import Data.Array
 import System.Random (StdGen)
 import Types
+import qualified SDL.Mixer as Mixer
 
 initialIntroState :: IntroState
 initialIntroState = IntroState 0
@@ -20,9 +21,9 @@ initialIntroState = IntroState 0
 initialMainMenuState :: MainMenuState
 initialMainMenuState = MainMenuState Endless
 
-initialCountingDownState :: SoundAssets -> GameState -> Bool -> (CountingDownState, SideEffect)
-initialCountingDownState soundAssets gs fromPause =
-  (CountingDownState gs 3 0 fromPause, PlayAudio (soundAssets ^. countdownSfx))
+initialCountingDownState :: SoundAssets -> GameState -> Bool -> (CountingDownState, [SideEffect])
+initialCountingDownState soundAssets gs freshMusic =
+  (CountingDownState gs 3 0, [PlayAudio (soundAssets ^. countdownSfx)] <> if freshMusic then [SetMusic Mixer.Forever (soundAssets ^. korobeiniki)] else [])
 
 initialPauseState :: SoundAssets -> GameState -> (PauseState, [SideEffect])
 initialPauseState soundAssets gs =

@@ -24,8 +24,8 @@ inputMainMenu ev assets mms =
         do
           rand <- randomIO
           let initGameState = initialGameState (mkStdGen rand)
-          let (initCountdown, countSideEffect) = initialCountingDownState (assets ^. soundAssets) initGameState False
-          applySideEffect countSideEffect
+          let (initCountdown, countSideEffect) = initialCountingDownState (assets ^. soundAssets) initGameState True
+          mapM_ applySideEffect countSideEffect
           return (Just $ CountingDown initCountdown)
       -- Help screen
       | SDL.keysymScancode keySym == SDL.ScancodeReturn && (mms ^. mainMenuSelectedOption == HelpOption) ->

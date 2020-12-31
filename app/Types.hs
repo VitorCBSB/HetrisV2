@@ -85,7 +85,6 @@ module Types
     gameStateToReturnTo,
     countdown,
     countdownTime,
-    fromPause,
     -- Intro state
     IntroState (..),
     introTime,
@@ -196,8 +195,7 @@ data IntroState = IntroState
 data CountingDownState = CountingDownState
   { _gameStateToReturnTo :: GameState,
     _countdown :: Int,
-    _countdownTime :: Double,
-    _fromPause :: Bool
+    _countdownTime :: Double
   }
 
 data PauseOption
@@ -273,6 +271,7 @@ data PlacingState = PlacingState
 data SideEffect
   = PlayAudio Mixer.Chunk
   | PlayMusic Mixer.Times Mixer.Music
+  | SetMusic Mixer.Times Mixer.Music
   | PauseMusic
   | ResumeMusic
   | HaltMusic
@@ -336,6 +335,7 @@ interpretEffects act =
 applySideEffect :: SideEffect -> IO ()
 applySideEffect (PlayAudio chunk) = Mixer.play chunk
 applySideEffect (PlayMusic times music) = Mixer.playMusic times music
+applySideEffect (SetMusic times music) = Mixer.playMusic times music >> Mixer.pauseMusic
 applySideEffect PauseMusic = Mixer.pauseMusic
 applySideEffect ResumeMusic = Mixer.resumeMusic
 applySideEffect HaltMusic = Mixer.haltMusic

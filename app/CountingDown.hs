@@ -34,7 +34,7 @@ tickCountingDown dt assets cds =
       if cds ^. countdown <= 1
         then do
           applySideEffect (PlayAudio (assets ^. soundAssets . countdownGoSfx))
-          applySideEffect (if cds ^. fromPause then ResumeMusic else PlayMusic Mixer.Forever (assets ^. soundAssets . korobeiniki))
+          applySideEffect ResumeMusic
           return $ Game (cds ^. gameStateToReturnTo)
         else do
           applySideEffect (PlayAudio (assets ^. soundAssets . countdownSfx))
