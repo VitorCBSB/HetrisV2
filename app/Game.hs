@@ -477,80 +477,81 @@ floatingTextLineClear lc ttl speed (x, y) =
 -- Locks a piece in place. Returns MainStatePhase because this can make us lose the game
 -- if a piece gets locked entirely outside of the board.
 lockPiece :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
-lockPiece ps assets gs =
-  let (bl1, bl2, bl3, bl4) = relativeBlocksFromRotation (ps ^. tetromino . shape) (ps ^. tetromino . rotation)
-      (tetI, tetJ) = ps ^. tetromino . pos
-      blockPos = map (\(blI, blJ) -> (blI + floor tetI, blJ + tetJ)) [bl1, bl2, bl3, bl4]
-      positionsToUpdate = tupleHistogram blockPos
-      newBoard = (gs ^. board) // map (\(r, cols) -> (r, ((gs ^. board) ! r) // map (\col -> (col, Just $ ps ^. tetromino . shape)) cols)) positionsToUpdate
-      linesToClear = map fst $ filter (\(r, _) -> and (isJust <$> (newBoard ! r))) positionsToUpdate
-      (TetrisLevel l) = levelFromLinesCleared (gs ^. linesCleared)
-      (gpX, gpY) = gamePosition
-      scoreOffsetX = -30
-      defeated = all (\(i, _) -> i >= visibleFieldHeight) blockPos
-   in if defeated
-        then
-          let (initGameOver, sideEffs) = initialGameOverState (assets ^. soundAssets) gs
-           in (GameOver initGameOver, sideEffs)
-        else
-          if not (null linesToClear)
-            then
-              let actualNewBoard = newBoard // map (\r -> (r, array (0, fieldWidth - 1) [(c, Nothing) | c <- [0 .. fieldWidth - 1]])) linesToClear
-                  newPhase = ClearingLines 0
-                  newLinesCleared = gs ^. linesCleared + length linesToClear
-                  levelUpAudio = if levelFromLinesCleared newLinesCleared > levelFromLinesCleared (gs ^. linesCleared) then [PlayAudio (assets ^. soundAssets . levelUpSfx)] else []
-                  lineClearType = calculateClearType (length linesToClear) (gs ^. maybeLastLockClear) (ps ^. tetromino) (gs ^. board)
-                  clearScore = scoreFromLineClear lineClearType (levelFromLinesCleared (gs ^. linesCleared))
-                  newComboCount = gs ^. comboCount + 1
-                  comboScore =
-                    if newComboCount > 1
-                      then newComboCount * 50 * (l + 1)
-                      else 0
-                  newScore = (gs ^. score) + clearScore + comboScore
-                  newFloatingTexts =
-                    (gs ^. floatingTexts)
-                      <> floatingTextLineClear lineClearType 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 600)
-                      <> [makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 648) (T.pack $ show clearScore)]
-                      <> if newComboCount > 1
-                        then
-                          [ makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 500) (T.pack $ show newComboCount <> " Combo!"),
-                            makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 548) (T.pack $ show comboScore)
-                          ]
-                        else []
-               in ( Game $
-                      gs
-                        { _board = actualNewBoard,
-                          _phase = newPhase,
-                          _linesCleared = newLinesCleared,
-                          _maybeLastLockClear = Just lineClearType,
-                          _score = newScore,
-                          _floatingTexts = newFloatingTexts,
-                          _comboCount = newComboCount
-                        },
-                    levelUpAudio <> [PlayAudio (assets ^. soundAssets . lineClearSfx)]
-                  )
-            else
-              let (newPhase, sideEffects) = sendNextTetromino False assets (gs {_board = newBoard})
-                  lockType = calculateLockType (ps ^. tetromino) (gs ^. board)
-                  maybeSpinReward =
-                    case lockType of
-                      NormalLock -> Nothing
-                      MiniTSpinLock -> Just ("Mini T-Spin", 100 * (l + 1))
-                      TSpinLock -> Just ("T-Spin", 400 * (l + 1))
-                  spinText =
-                    case maybeSpinReward of
-                      Nothing -> []
-                      Just (t, s) ->
-                        [ makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 600) t,
-                          makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 648) (T.pack $ show s)
-                        ]
-                  addScore gs_ = gs_ & comboCount .~ 0 & score +~ maybe 0 snd maybeSpinReward & floatingTexts <>~ spinText
-               in ( case newPhase of
-                      Game gs' -> Game $ addScore gs'
-                      GameOver gameOverState -> GameOver $ gameOverState & finishedGame %~ addScore
-                      _ -> newPhase,
-                    sideEffects <> [PlayAudio (assets ^. soundAssets . lockedPieceSfx)]
-                  )
+lockPiece ps assets gs
+  -- This piece locked outside the board, so gg.
+  | defeated =
+    let (initGameOver, sideEffs) = initialGameOverState (assets ^. soundAssets) gs
+     in (GameOver initGameOver, sideEffs)
+  -- Locking this piece made us clear lines.
+  | not (null linesToClear) =
+    let actualNewBoard = newBoard // map (\r -> (r, array (0, fieldWidth - 1) [(c, Nothing) | c <- [0 .. fieldWidth - 1]])) linesToClear
+        newPhase = ClearingLines 0
+        newLinesCleared = gs ^. linesCleared + length linesToClear
+        levelUpAudio = if levelFromLinesCleared newLinesCleared > levelFromLinesCleared (gs ^. linesCleared) then [PlayAudio (assets ^. soundAssets . levelUpSfx)] else []
+        lineClearType = calculateClearType (length linesToClear) (gs ^. maybeLastLockClear) (ps ^. tetromino) (gs ^. board)
+        clearScore = scoreFromLineClear lineClearType (levelFromLinesCleared (gs ^. linesCleared))
+        newComboCount = gs ^. comboCount + 1
+        comboScore =
+          if newComboCount > 1
+            then newComboCount * 50 * (l + 1)
+            else 0
+        newScore = (gs ^. score) + clearScore + comboScore
+        newFloatingTexts =
+          (gs ^. floatingTexts)
+            <> floatingTextLineClear lineClearType 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 600)
+            <> [makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 648) (T.pack $ show clearScore)]
+            <> if newComboCount > 1
+              then
+                [ makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 500) (T.pack $ show newComboCount <> " Combo!"),
+                  makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 548) (T.pack $ show comboScore)
+                ]
+              else []
+     in ( Game $
+            gs
+              { _board = actualNewBoard,
+                _phase = newPhase,
+                _linesCleared = newLinesCleared,
+                _maybeLastLockClear = Just lineClearType,
+                _score = newScore,
+                _floatingTexts = newFloatingTexts,
+                _comboCount = newComboCount
+              },
+          levelUpAudio <> [PlayAudio (assets ^. soundAssets . lineClearSfx)]
+        )
+  -- Plain old normal locking, send the next piece.
+  | otherwise =
+    let (newPhase, sideEffects) = sendNextTetromino False assets (gs {_board = newBoard})
+        lockType = calculateLockType (ps ^. tetromino) (gs ^. board)
+        maybeSpinReward =
+          case lockType of
+            NormalLock -> Nothing
+            MiniTSpinLock -> Just ("Mini T-Spin", 100 * (l + 1))
+            TSpinLock -> Just ("T-Spin", 400 * (l + 1))
+        spinText =
+          case maybeSpinReward of
+            Nothing -> []
+            Just (t, s) ->
+              [ makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 600) t,
+                makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 648) (T.pack $ show s)
+              ]
+        addScore gs_ = gs_ & comboCount .~ 0 & score +~ maybe 0 snd maybeSpinReward & floatingTexts <>~ spinText
+     in ( case newPhase of
+            Game gs' -> Game $ addScore gs'
+            GameOver gameOverState -> GameOver $ gameOverState & finishedGame %~ addScore
+            _ -> newPhase,
+          sideEffects <> [PlayAudio (assets ^. soundAssets . lockedPieceSfx)]
+        )
+  where
+    (bl1, bl2, bl3, bl4) = relativeBlocksFromRotation (ps ^. tetromino . shape) (ps ^. tetromino . rotation)
+    (tetI, tetJ) = ps ^. tetromino . pos
+    blockPos = map (\(blI, blJ) -> (blI + floor tetI, blJ + tetJ)) [bl1, bl2, bl3, bl4]
+    positionsToUpdate = tupleHistogram blockPos
+    newBoard = (gs ^. board) // map (\(r, cols) -> (r, ((gs ^. board) ! r) // map (\col -> (col, Just $ ps ^. tetromino . shape)) cols)) positionsToUpdate
+    linesToClear = map fst $ filter (\(r, _) -> and (isJust <$> (newBoard ! r))) positionsToUpdate
+    (TetrisLevel l) = levelFromLinesCleared (gs ^. linesCleared)
+    (gpX, gpY) = gamePosition
+    scoreOffsetX = -30
+    defeated = all (\(i, _) -> i >= visibleFieldHeight) blockPos
 
 tetrominoVel :: Bool -> TetrisLevel -> Double
 tetrominoVel wantsToSoftDrop tl =
