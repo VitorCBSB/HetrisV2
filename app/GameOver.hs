@@ -7,13 +7,13 @@ module GameOver
   )
 where
 
-import Constants
+import Constants (windowSize)
 import Control.Lens
 import Game (renderGame)
-import InitialStates
+import InitialStates (initialMainMenuState)
 import qualified SDL
 import Types
-import UtilsSDL
+import UtilsSDL (renderTextCentered)
 
 inputGameOver :: SDL.EventPayload -> Assets -> GameOverState -> IO MainStatePhase
 inputGameOver ev assets gos =
