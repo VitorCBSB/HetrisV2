@@ -69,7 +69,8 @@ statLines :: GameOverState -> [(T.Text, T.Text)]
 statLines gos =
   let clearLines = map (\(l, c) -> (T.pack $ show l, T.pack $ show c)) (Map.toList (gos ^. finishedGame . gameStats . clears))
    in [ ("Pieces played", (T.pack . show) (gos ^. finishedGame . gameStats . piecesPlayed)),
-        ("Max combo", (T.pack . show) (gos ^. finishedGame . gameStats . maxCombo))
+        ("Max combo", (T.pack . show) (gos ^. finishedGame . gameStats . maxCombo)),
+        ("Lines cleared", (T.pack . show) (gos ^. finishedGame . linesCleared))
       ]
         <> clearLines
 
