@@ -11,6 +11,7 @@ where
 import Constants (fieldHeight, fieldWidth)
 import Control.Lens
 import Data.Array
+import qualified Data.Map as Map
 import qualified SDL.Mixer as Mixer
 import System.Random (StdGen)
 import Types
@@ -35,7 +36,7 @@ initialGameOverState soundAssets gs =
 
 initialGameState :: StdGen -> GameState
 initialGameState initRand =
-  GameState cleanBoard initNextShapes initNextBag Nothing (Placing newPlacingState) 0 Nothing False 0 0 rand'' initTexts
+  GameState initialStats cleanBoard initNextShapes initNextBag Nothing (Placing newPlacingState) 0 Nothing False 0 0 rand'' initTexts
   where
     cleanBoard =
       array
@@ -70,3 +71,4 @@ initialGameState initRand =
           _hardDropScore = 0
         }
     initNextShapes = (next1, next2, next3, next4, next5, next6)
+    initialStats = GameStats Map.empty 0 1

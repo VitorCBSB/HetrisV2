@@ -226,5 +226,5 @@ render renderer ms =
     Help -> renderHelp renderer (ms ^. gameAssets)
     Paused ps -> renderPaused renderer (ms ^. gameAssets) ps
     CountingDown cds -> renderCountingDown renderer (ms ^. gameAssets) cds
-    Game gs -> renderGame renderer (ms ^. gameAssets) gs
+    Game gs -> renderGame renderer (ms ^. gameAssets) gs (0, 0)
     GameOver gos -> renderGameOver renderer (ms ^. gameAssets) gos

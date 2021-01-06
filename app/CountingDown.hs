@@ -44,5 +44,5 @@ tickCountingDown dt assets cds =
 renderCountingDown :: SDL.Renderer -> Assets -> CountingDownState -> IO ()
 renderCountingDown renderer assets cds =
   do
-    renderGame renderer assets (cds ^. gameStateToReturnTo)
+    renderGame renderer assets (cds ^. gameStateToReturnTo) (0, 0)
     renderTextCentered (assets ^. textAssets . font) renderer (T.pack $ show $ cds ^. countdown) (windowSize ^. _1 `div` 2, windowSize ^. _2 `div` 2)

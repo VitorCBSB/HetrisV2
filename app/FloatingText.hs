@@ -35,6 +35,9 @@ tickFloatingText dt ft =
         ft & timeToLive -~ dt
           & pos . _2 +~ (ft ^. upwardsSpeed * dt)
 
-renderFloatingText :: Ttf.Font -> SDL.Renderer -> FloatingText -> IO ()
-renderFloatingText f r ft =
-  renderTextCentered f r (ft ^. text) ((ft ^. pos) & both %~ floor)
+renderFloatingText :: Ttf.Font -> SDL.Renderer -> (Int, Int) -> FloatingText -> IO ()
+renderFloatingText f r (cx, cy) ft =
+  renderTextCentered f r (ft ^. text) (px, py)
+  where
+    (tempX, tempY) = (ft ^. pos) & both %~ floor
+    (px, py) = (tempX - cx, tempY - cy)

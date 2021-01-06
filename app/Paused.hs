@@ -70,7 +70,7 @@ tickPaused _ ps = return $ Paused ps
 renderPaused :: SDL.Renderer -> Assets -> PauseState -> IO ()
 renderPaused renderer assets ps =
   do
-    renderGame renderer assets (ps ^. backgroundGS)
+    renderGame renderer assets (ps ^. backgroundGS) (0, 0)
     renderTextCentered (assets ^. textAssets . font) renderer "PAUSED" (windowSize ^. _1 `div` 2, windowSize ^. _2 `div` 5)
     renderTextCentered (assets ^. textAssets . font) renderer resumeText (windowSize ^. _1 `div` 2, windowSize ^. _2 `div` 2 - 60)
     renderTextCentered (assets ^. textAssets . font) renderer restartText (windowSize ^. _1 `div` 2, windowSize ^. _2 `div` 2)

@@ -49,8 +49,14 @@ module Types
     MainMenuOption (..),
     MainMenuState (..),
     mainMenuSelectedOption,
+    -- Game statistics
+    GameStats (..),
+    clears,
+    maxCombo,
+    piecesPlayed,
     -- Tetris game state and lenses
     GameState (..),
+    gameStats,
     board,
     nextShapes,
     nextTetrominoBag,
@@ -108,6 +114,7 @@ where
 
 import Control.Lens (makeLenses)
 import Data.Array (Array)
+import qualified Data.Map.Strict as Map
 import FloatingText (FloatingText)
 import qualified SDL
 import qualified SDL.Font as Ttf
@@ -210,8 +217,15 @@ data PauseState = PauseState
     _selectedOption :: PauseOption
   }
 
+data GameStats = GameStats
+  { _clears :: Map.Map LineClear Int,
+    _maxCombo :: Int,
+    _piecesPlayed :: Int
+  }
+
 data GameState = GameState
-  { _board :: Board,
+  { _gameStats :: GameStats,
+    _board :: Board,
     _nextShapes :: (TetrominoShape, TetrominoShape, TetrominoShape, TetrominoShape, TetrominoShape, TetrominoShape),
     _nextTetrominoBag :: (Maybe TetrominoShape, Maybe TetrominoShape, Maybe TetrominoShape, Maybe TetrominoShape, Maybe TetrominoShape, Maybe TetrominoShape, Maybe TetrominoShape),
     _heldPiece :: Maybe TetrominoShape,
@@ -254,7 +268,23 @@ data LineClear
   | B2BTetris
   | B2BTSpinDouble
   | B2BTSpinTriple
-  deriving (Eq)
+  deriving (Eq, Ord)
+
+instance Show LineClear where
+  show l =
+    case l of
+      Single -> "Single"
+      Double -> "Double"
+      Triple -> "Triple"
+      Tetris -> "Tetris"
+      TSpinSingle -> "T-Spin Single"
+      TSpinDouble -> "T-Spin Double"
+      TSpinTriple -> "T-Spin Triple"
+      MiniTSpinSingle -> "Mini T-Spin Single"
+      B2BTSpinSingle -> "B2B T-Spin Single"
+      B2BTetris -> "B2B Tetris"
+      B2BTSpinDouble -> "B2B T-Spin Double"
+      B2BTSpinTriple -> "B2B T-Spin Triple"
 
 data GamePhase
   = Placing PlacingState
@@ -303,6 +333,7 @@ data Tetromino = Tetromino
 type Block = TetrominoShape
 
 $(makeLenses ''MainState)
+$(makeLenses ''GameStats)
 $(makeLenses ''GameState)
 $(makeLenses ''CountingDownState)
 $(makeLenses ''IntroState)

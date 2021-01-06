@@ -12,6 +12,7 @@ import Control.Lens
 import Control.Monad (forM_, when)
 import Data.Array
 import Data.List (find, foldl')
+import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, fromMaybe, isJust, isNothing, mapMaybe)
 import qualified Data.Text as T
 import FloatingText (FloatingText, makeFloatingText, renderFloatingText, tickFloatingText)
@@ -72,17 +73,11 @@ inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
       | (SDL.keysymScancode keySym == SDL.ScancodeC || SDL.keysymScancode keySym == SDL.ScancodeLShift) && not repeat && not (placingState ^. fromHeld) ->
         case gs ^. heldPiece of
           Nothing ->
-            let (newPhase, sideEffects) = sendNextTetromino True assets gs
-             in case newPhase of
-                  Game gs' -> return (Game $ gs' {_heldPiece = Just (placingState ^. tetromino . shape)}, sideEffects)
-                  _ -> return (newPhase, sideEffects)
+            let newGS = gs & heldPiece ?~ placingState ^. tetromino . shape
+             in return $ sendNextTetromino True assets newGS
           Just ts ->
-            return
-              ( Game $
-                  gs & phase .~ Placing (placingState & tetromino .~ Tetromino (20.5, 4) ts Base & fromHeld .~ True & lockingTime .~ Nothing)
-                    & heldPiece ?~ (placingState ^. tetromino . shape),
-                []
-              )
+            let newGS = gs & heldPiece ?~ placingState ^. tetromino . shape
+             in return $ sendTetromino ts True assets newGS
       -- Hard drop
       | SDL.keysymScancode keySym == SDL.ScancodeSpace && not repeat && isNothing (placingState ^. lockingTime) ->
         return $ hardDrop placingState assets gs & _1 %~ Game
@@ -335,6 +330,24 @@ shiftTetrominoDown board tetromino =
       newTetromino = if shiftedIsObstructed then tetromino else shiftedTetromino
    in (newTetromino, not shiftedIsObstructed)
 
+-- Send the argument shape
+sendTetromino :: TetrominoShape -> Bool -> Assets -> GameState -> (MainStatePhase, [SideEffect])
+sendTetromino shape fromHeld assets gs =
+  let newTetromino = Tetromino (20.5, 4) shape Base
+      defeated = isTetrominoObstructed (gs ^. board) newTetromino
+      newLockingTime =
+        -- Did we spawn already touching something? Then start locking right away.
+        if snd $ shiftTetrominoDown (gs ^. board) newTetromino
+          then Nothing
+          else Just 0
+      newPhase =
+        Placing (PlacingState newTetromino fromHeld newLockingTime 0 0)
+   in if defeated
+        then
+          let (initGameOver, sideEffs) = initialGameOverState (assets ^. soundAssets) gs
+           in (GameOver initGameOver, sideEffs)
+        else (Game $ gs & phase .~ newPhase, [])
+
 -- Spawn the next piece to be sent. Returns MainStatePhase because this can make us lose game
 -- if a piece spawns overlapping a block.
 sendNextTetromino :: Bool -> Assets -> GameState -> (MainStatePhase, [SideEffect])
@@ -349,29 +362,12 @@ sendNextTetromino fromHeld assets gs =
           Just _ -> ((mns7, mns8, mns9, mns10, mns11, mns12, Nothing), gs ^. rand)
       (ns0, ns1, ns2, ns3, ns4, ns5) = gs ^. nextShapes
       newNextShapes = (ns1, ns2, ns3, ns4, ns5, ns6)
-      newTetromino = Tetromino (20.5, 4) ns0 Base
-      defeated = isTetrominoObstructed (gs ^. board) newTetromino
-      newLockingTime =
-        -- Did we spawn already touching something? Then start locking right away.
-        if snd $ shiftTetrominoDown (gs ^. board) newTetromino
-          then Nothing
-          else Just 0
-      newPhase =
-        Placing (PlacingState newTetromino fromHeld newLockingTime 0 0)
-   in if defeated
-        then
-          let (initGameOver, sideEffs) = initialGameOverState (assets ^. soundAssets) gs
-           in (GameOver initGameOver, sideEffs)
-        else
-          ( Game $
-              gs
-                { _phase = newPhase,
-                  _nextShapes = newNextShapes,
-                  _nextTetrominoBag = newBag,
-                  _rand = newRand
-                },
-            if defeated then [PlayAudio (assets ^. soundAssets . defeatSfx), HaltMusic] else []
-          )
+      newGS =
+        gs & rand .~ newRand
+          & nextTetrominoBag .~ newBag
+          & nextShapes .~ newNextShapes
+          & (gameStats . piecesPlayed) %~ (+ 1)
+   in sendTetromino ns0 fromHeld assets newGS
 
 levelFromLinesCleared :: Int -> TetrisLevel
 levelFromLinesCleared linesCleared = TetrisLevel $ linesCleared `div` linesLevelUp
@@ -490,6 +486,14 @@ lockPiece ps assets gs
         levelUpAudio = if levelFromLinesCleared newLinesCleared > levelFromLinesCleared (gs ^. linesCleared) then [PlayAudio (assets ^. soundAssets . levelUpSfx)] else []
         lineClearType = calculateClearType (length linesToClear) (gs ^. maybeLastLockClear) (ps ^. tetromino) (gs ^. board)
         clearScore = scoreFromLineClear lineClearType (levelFromLinesCleared (gs ^. linesCleared))
+        statUpdate mv =
+          case mv of
+            Nothing -> Just 1
+            Just x -> Just $ x + 1
+        newStats =
+          gs ^. gameStats
+            & clears %~ Map.alter statUpdate lineClearType
+            & maxCombo %~ max newComboCount
         newComboCount = gs ^. comboCount + 1
         comboScore =
           if newComboCount > 1
@@ -514,7 +518,8 @@ lockPiece ps assets gs
                 _maybeLastLockClear = Just lineClearType,
                 _score = newScore,
                 _floatingTexts = newFloatingTexts,
-                _comboCount = newComboCount
+                _comboCount = newComboCount,
+                _gameStats = newStats
               },
           levelUpAudio <> [PlayAudio (assets ^. soundAssets . lineClearSfx)]
         )
@@ -653,8 +658,8 @@ tetrominoCounterclockwiseRotation rot =
     OneEighty -> Ninety
     TwoSeventy -> OneEighty
 
-renderGame :: SDL.Renderer -> Assets -> GameState -> IO ()
-renderGame renderer assets gs =
+renderGame :: SDL.Renderer -> Assets -> GameState -> (Int, Int) -> IO ()
+renderGame renderer assets gs cameraPos@(cx, cy) =
   do
     renderBoard (assets ^. imageAssets) boardPosition (gs ^. board) renderer
     renderNextShapes (assets ^. imageAssets) (gpX + boardWidthOffset + nextShapesWidthOffset, gpY + nextShapesHeightOffset) (gs ^. nextShapes) renderer
@@ -671,12 +676,12 @@ renderGame renderer assets gs =
           renderGhostTetromino (assets ^. imageAssets) boardPosition (placingState ^. tetromino) (gs ^. board) renderer
           renderTetromino boardPosition (placingState ^. tetromino) (colorFromShape (assets ^. imageAssets) (placingState ^. tetromino . shape)) renderer
       _ -> return ()
-    mapM_ (renderFloatingText (assets ^. textAssets . font) renderer) (gs ^. floatingTexts)
+    mapM_ (renderFloatingText (assets ^. textAssets . font) renderer cameraPos) (gs ^. floatingTexts)
   where
     boardWidthOffset = 128
     nextShapesWidthOffset = fieldWidth * cellSize + 48
     nextShapesHeightOffset = 64
-    (gpX, gpY) = gamePosition
+    (gpX, gpY) = (gamePosition ^. _1 - cx, gamePosition ^. _2 - cy)
     boardPosition = (gpX + boardWidthOffset, gpY)
     heldPieceHeightOffset = 64
     textWidthOffset = boardWidthOffset + nextShapesWidthOffset + 192
