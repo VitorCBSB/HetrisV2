@@ -36,7 +36,7 @@ initialGameOverState soundAssets gs =
 
 initialGameState :: StdGen -> GameState
 initialGameState initRand =
-  GameState initialStats cleanBoard initNextShapes initNextBag Nothing (Placing newPlacingState) 0 Nothing False 0 0 rand'' initTexts
+  GameState initialStats 0 cleanBoard initNextShapes initNextBag Nothing (Placing newPlacingState) 0 Nothing False 0 0 rand'' initTexts
   where
     cleanBoard =
       array

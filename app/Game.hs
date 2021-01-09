@@ -279,7 +279,10 @@ tickGame dt assets gs =
 
 tickGame' :: Double -> Assets -> GameState -> IO (MainStatePhase, [SideEffect])
 tickGame' dt assets gs =
-  let postTextsGs = gs & floatingTexts .~ mapMaybe (tickFloatingText dt) (gs ^. floatingTexts)
+  let postTextsGs =
+        gs
+          & floatingTexts .~ mapMaybe (tickFloatingText dt) (gs ^. floatingTexts)
+          & elapsedTime +~ dt
    in case postTextsGs ^. phase of
         Placing placingState -> return $ tickPlacingState placingState dt assets postTextsGs
         ClearingLines t ->

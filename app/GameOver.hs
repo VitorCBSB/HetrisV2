@@ -16,10 +16,11 @@ import Game (renderGame)
 import InitialStates (initialMainMenuState)
 import qualified SDL
 import Types
+import Utils (timerText)
 import UtilsSDL (renderText, renderTextCentered)
 
 finalCameraX :: Int
-finalCameraX = 450
+finalCameraX = 500
 
 -- In seconds
 cameraSlideTime :: Double
@@ -68,7 +69,8 @@ tickGameOver dt gos =
 statLines :: GameOverState -> [(T.Text, T.Text)]
 statLines gos =
   let clearLines = map (\(l, c) -> (T.pack $ show l, T.pack $ show c)) (Map.toList (gos ^. finishedGame . gameStats . clears))
-   in [ ("Pieces played", (T.pack . show) (gos ^. finishedGame . gameStats . piecesPlayed)),
+   in [ ("Time", timerText (gos ^. finishedGame . elapsedTime)),
+        ("Pieces played", (T.pack . show) (gos ^. finishedGame . gameStats . piecesPlayed)),
         ("Max combo", (T.pack . show) (gos ^. finishedGame . gameStats . maxCombo)),
         ("Lines cleared", (T.pack . show) (gos ^. finishedGame . linesCleared))
       ]
@@ -84,11 +86,11 @@ renderGameOver renderer assets gos =
           renderTextCentered (assets ^. textAssets . font) renderer "GAME OVER" (windowSize ^. _1 `div` 2, windowSize ^. _2 `div` 2)
       Statistics _ lines ->
         do
-          renderTextCentered (assets ^. textAssets . font) renderer "Stats" (750, 100)
+          renderTextCentered (assets ^. textAssets . font) renderer "Stats" (700, 100)
           forM_ (take lines (zip [0 ..] (statLines gos))) $ \(i, (l, c)) ->
             do
-              renderText (assets ^. textAssets . font) renderer l (550, 200 + i * 40)
-              renderText (assets ^. textAssets . font) renderer c (900, 200 + i * 40)
+              renderText (assets ^. textAssets . font) renderer l (500, 200 + i * 40)
+              renderText (assets ^. textAssets . font) renderer c (850, 200 + i * 40)
       _ -> return ()
   where
     cameraPos =

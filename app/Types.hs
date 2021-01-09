@@ -57,6 +57,7 @@ module Types
     -- Tetris game state and lenses
     GameState (..),
     gameStats,
+    elapsedTime,
     board,
     nextShapes,
     nextTetrominoBag,
@@ -225,6 +226,7 @@ data GameStats = GameStats
 
 data GameState = GameState
   { _gameStats :: GameStats,
+    _elapsedTime :: Double,
     _board :: Board,
     _nextShapes :: (TetrominoShape, TetrominoShape, TetrominoShape, TetrominoShape, TetrominoShape, TetrominoShape),
     _nextTetrominoBag :: (Maybe TetrominoShape, Maybe TetrominoShape, Maybe TetrominoShape, Maybe TetrominoShape, Maybe TetrominoShape, Maybe TetrominoShape, Maybe TetrominoShape),
