@@ -16,7 +16,7 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, fromMaybe, isJust, isNothing, mapMaybe)
 import qualified Data.Text as T
 import FloatingText (FloatingText, makeFloatingText, renderFloatingText, tickFloatingText)
-import InitialStates
+import InitialStates (initialGameOverState, initialPauseState)
 import Linear.V4 (V4 (V4))
 import qualified SDL
 import qualified SDL.Font as Ttf
@@ -33,11 +33,11 @@ normalDropSpeed (TetrisLevel l) = 1 / ((0.8 - fromIntegral l * 0.007) ^ fromInte
 inputGame :: SDL.EventPayload -> Assets -> GameState -> IO MainStatePhase
 inputGame ev assets gs =
   do
-    (newMSP, sideEffs) <- inputGame' ev assets gs
+    let (newMSP, sideEffs) = inputGame' ev assets gs
     mapM_ applySideEffect sideEffs
     return newMSP
 
-inputGame' :: SDL.EventPayload -> Assets -> GameState -> IO (MainStatePhase, [SideEffect])
+inputGame' :: SDL.EventPayload -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 inputGame' ev assets gs =
   case ev of
     SDL.KeyboardEvent evData
@@ -45,47 +45,47 @@ inputGame' ev assets gs =
         inputPress evData assets gs
       | SDL.keyboardEventKeyMotion evData == SDL.Released ->
         inputRelease evData gs
-      | otherwise -> return (Game gs, [])
-    _ -> return (Game gs, [])
+      | otherwise -> (Game gs, [])
+    _ -> (Game gs, [])
 
-inputPress :: SDL.KeyboardEventData -> Assets -> GameState -> IO (MainStatePhase, [SideEffect])
+inputPress :: SDL.KeyboardEventData -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
   case gs ^. phase of
     Placing placingState
       -- Counter clockwise rotation
       | SDL.keysymScancode keySym == SDL.ScancodeZ || SDL.keysymScancode keySym == SDL.ScancodeLCtrl ->
-        return $ attemptCounterClockwiseRotation placingState assets gs & _1 %~ Game
+        attemptCounterClockwiseRotation placingState assets gs & _1 %~ Game
       -- Clockwise rotation
       | SDL.keysymScancode keySym == SDL.ScancodeX || SDL.keysymScancode keySym == SDL.ScancodeUp ->
-        return $ attemptClockwiseRotation placingState assets gs & _1 %~ Game
+        attemptClockwiseRotation placingState assets gs & _1 %~ Game
       -- Move left
       | SDL.keysymScancode keySym == SDL.ScancodeLeft ->
-        return $ attemptToMoveLeft placingState assets gs & _1 %~ Game
+        attemptToMoveLeft placingState assets gs & _1 %~ Game
       -- Move right
       | SDL.keysymScancode keySym == SDL.ScancodeRight ->
-        return $ attemptToMoveRight placingState assets gs & _1 %~ Game
+        attemptToMoveRight placingState assets gs & _1 %~ Game
       -- Soft drop / lock piece if locking
       | SDL.keysymScancode keySym == SDL.ScancodeDown && not repeat ->
         case placingState ^. lockingTime of
-          Nothing -> return (Game $ gs & wantsToSoftDrop .~ True, [])
-          Just _ -> return $ lockPiece placingState assets gs
+          Nothing -> (Game $ gs & wantsToSoftDrop .~ True, [])
+          Just _ -> lockPiece placingState assets gs
       -- Hold piece
       | (SDL.keysymScancode keySym == SDL.ScancodeC || SDL.keysymScancode keySym == SDL.ScancodeLShift) && not repeat && not (placingState ^. fromHeld) ->
         case gs ^. heldPiece of
           Nothing ->
             let newGS = gs & heldPiece ?~ placingState ^. tetromino . shape
-             in return $ sendNextTetromino True assets newGS
+             in sendNextTetromino True assets newGS
           Just ts ->
             let newGS = gs & heldPiece ?~ placingState ^. tetromino . shape
-             in return $ sendTetromino ts True assets newGS
+             in sendTetromino ts True assets newGS
       -- Hard drop
       | SDL.keysymScancode keySym == SDL.ScancodeSpace && not repeat && isNothing (placingState ^. lockingTime) ->
-        return $ hardDrop placingState assets gs & _1 %~ Game
+        hardDrop placingState assets gs & _1 %~ Game
       | (SDL.keysymScancode keySym == SDL.ScancodeEscape || SDL.keysymScancode keySym == SDL.ScancodeF1) && not repeat ->
         let newGS = gs & wantsToSoftDrop .~ False
             (pauseState, pauseSfx) = initialPauseState (assets ^. soundAssets) newGS
-         in return (Paused pauseState, pauseSfx)
-      | otherwise -> return (Game gs, [])
+         in (Paused pauseState, pauseSfx)
+      | otherwise -> (Game gs, [])
     ClearingLines _ ->
       -- Pause
       if (SDL.keysymScancode keySym == SDL.ScancodeEscape || SDL.keysymScancode keySym == SDL.ScancodeF1)
@@ -93,17 +93,17 @@ inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
         then
           let newGS = gs & wantsToSoftDrop .~ False
               (pauseState, pauseSfx) = initialPauseState (assets ^. soundAssets) newGS
-           in return (Paused pauseState, pauseSfx)
-        else return (Game gs, [])
+           in (Paused pauseState, pauseSfx)
+        else (Game gs, [])
 
-inputRelease :: SDL.KeyboardEventData -> GameState -> IO (MainStatePhase, [SideEffect])
+inputRelease :: SDL.KeyboardEventData -> GameState -> (MainStatePhase, [SideEffect])
 inputRelease (SDL.KeyboardEventData _ _ _ keySym) gs =
   case gs ^. phase of
     Placing _ ->
       if SDL.keysymScancode keySym == SDL.ScancodeDown
-        then return (Game $ gs & wantsToSoftDrop .~ False, [])
-        else return (Game gs, [])
-    _ -> return (Game gs, [])
+        then (Game $ gs & wantsToSoftDrop .~ False, [])
+        else (Game gs, [])
+    _ -> (Game gs, [])
 
 hardDrop :: PlacingState -> Assets -> GameState -> (GameState, [SideEffect])
 hardDrop ps assets gs =
@@ -273,26 +273,26 @@ counterClockwiseRotation board tetromino =
 tickGame :: Double -> Assets -> GameState -> IO MainStatePhase
 tickGame dt assets gs =
   do
-    (newMS, sideEffs) <- tickGame' dt assets gs
+    let (newMS, sideEffs) = tickGame' dt assets gs
     mapM_ applySideEffect sideEffs
     return newMS
 
-tickGame' :: Double -> Assets -> GameState -> IO (MainStatePhase, [SideEffect])
+tickGame' :: Double -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 tickGame' dt assets gs =
   let postTextsGs =
         gs
           & floatingTexts .~ mapMaybe (tickFloatingText dt) (gs ^. floatingTexts)
           & elapsedTime +~ dt
    in case postTextsGs ^. phase of
-        Placing placingState -> return $ tickPlacingState placingState dt assets postTextsGs
+        Placing placingState -> tickPlacingState placingState dt assets postTextsGs
         ClearingLines t ->
           if t >= clearingLinesTime
             then
               let newBoard = foldl' dropLine (postTextsGs ^. board) [0 .. fieldHeight - 1]
                   (newPhase, sideEffects) = sendNextTetromino False assets (postTextsGs {_board = newBoard})
                   sideEffects' = sideEffects <> if newBoard == (postTextsGs ^. board) then [] else [PlayAudio (assets ^. soundAssets . lineDropSfx)]
-               in return (newPhase, sideEffects')
-            else return (Game $ postTextsGs & phase .~ ClearingLines (t + dt), [])
+               in (newPhase, sideEffects')
+            else (Game $ postTextsGs & phase .~ ClearingLines (t + dt), [])
 
 dropLine :: Board -> Int -> Board
 dropLine board row =
