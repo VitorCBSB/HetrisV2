@@ -67,6 +67,7 @@ initialGameState initRand =
         { _tetromino = initTet,
           _fromHeld = False,
           _lockingTime = Nothing,
+          _movesPerformed = 0,
           _softDropScore = 0,
           _hardDropScore = 0
         }

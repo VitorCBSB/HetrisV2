@@ -80,6 +80,7 @@ module Types
     tetromino,
     fromHeld,
     lockingTime,
+    movesPerformed,
     softDropScore,
     hardDropScore,
     SideEffect (..),
@@ -296,6 +297,7 @@ data PlacingState = PlacingState
   { _tetromino :: Tetromino,
     _fromHeld :: Bool,
     _lockingTime :: Maybe Double,
+    _movesPerformed :: Int,
     _softDropScore :: Int,
     _hardDropScore :: Int
   }

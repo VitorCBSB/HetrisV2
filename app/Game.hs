@@ -54,21 +54,21 @@ inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
     Placing placingState
       -- Counter clockwise rotation
       | SDL.keysymScancode keySym == SDL.ScancodeZ || SDL.keysymScancode keySym == SDL.ScancodeLCtrl ->
-        attemptCounterClockwiseRotation placingState assets gs & _1 %~ Game
+        attemptCounterClockwiseRotation placingState assets gs
       -- Clockwise rotation
       | SDL.keysymScancode keySym == SDL.ScancodeX || SDL.keysymScancode keySym == SDL.ScancodeUp ->
-        attemptClockwiseRotation placingState assets gs & _1 %~ Game
+        attemptClockwiseRotation placingState assets gs
       -- Move left
       | SDL.keysymScancode keySym == SDL.ScancodeLeft ->
-        attemptToMoveLeft placingState assets gs & _1 %~ Game
+        attemptToMoveLeft placingState assets gs
       -- Move right
       | SDL.keysymScancode keySym == SDL.ScancodeRight ->
-        attemptToMoveRight placingState assets gs & _1 %~ Game
+        attemptToMoveRight placingState assets gs
       -- Soft drop / lock piece if locking
       | SDL.keysymScancode keySym == SDL.ScancodeDown && not repeat ->
         case placingState ^. lockingTime of
           Nothing -> (Game $ gs & wantsToSoftDrop .~ True, [])
-          Just _ -> lockPiece placingState assets gs
+          Just _ -> lockPiece (placingState ^. tetromino) assets gs
       -- Hold piece
       | (SDL.keysymScancode keySym == SDL.ScancodeC || SDL.keysymScancode keySym == SDL.ScancodeLShift) && not repeat && not (placingState ^. fromHeld) ->
         case gs ^. heldPiece of
@@ -121,10 +121,9 @@ hardDrop ps assets gs =
         [PlayAudio (assets ^. soundAssets . landOnSurfaceSfx)]
       )
 
-attemptToMoveLeft :: PlacingState -> Assets -> GameState -> (GameState, [SideEffect])
+attemptToMoveLeft :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 attemptToMoveLeft ps assets gs =
   let (movedTetromino, successful) = shiftToLeft (gs ^. board) (ps ^. tetromino)
-      (_, successfulDown) = shiftTetrominoDown (gs ^. board) movedTetromino
       (_, successfulLeft) = shiftToLeft (gs ^. board) movedTetromino
       wasLocking = isJust $ ps ^. lockingTime
       sideEffects =
@@ -134,23 +133,15 @@ attemptToMoveLeft ps assets gs =
               then [PlayAudio (assets ^. soundAssets . movementSfx)]
               else [PlayAudio (assets ^. soundAssets . hitWallSfx)]
           else []
-   in -- A successful shift resets locking time
-      ( if successful
-          then
-            if successfulDown
-              then
-                gs & phase
-                  .~ Placing
-                    ( ps & tetromino .~ movedTetromino
-                        -- Also reset our position's decimal point to 0.5
-                        -- if we were locking
-                        & (tetromino . pos . _1) %~ (\i -> if wasLocking then fromIntegral (floor i) + 0.5 else i)
-                        & lockingTime .~ Nothing
-                    )
-              else gs & phase .~ Placing (ps & tetromino .~ movedTetromino & lockingTime ?~ 0)
-          else gs & phase .~ Placing (ps & tetromino .~ movedTetromino),
-        sideEffects
-      )
+      newPs =
+        ps & tetromino .~ movedTetromino
+          -- Also reset our position's decimal point to 0.5
+          -- if we were locking
+          & (tetromino . pos . _1) %~ (\i -> if wasLocking then fromIntegral (floor i) + 0.5 else i)
+          & movesPerformed +~ 1
+   in if successful
+        then postMovementLimitCheck newPs assets gs & _2 <>~ sideEffects
+        else (Game $ gs & phase .~ Placing (ps & tetromino .~ movedTetromino), sideEffects)
 
 shiftToLeft :: Board -> Tetromino -> (Tetromino, Bool)
 shiftToLeft board tetromino =
@@ -159,10 +150,9 @@ shiftToLeft board tetromino =
       newTetromino = if shiftedIsObstructed then tetromino else shiftedTetromino
    in (newTetromino, not shiftedIsObstructed)
 
-attemptToMoveRight :: PlacingState -> Assets -> GameState -> (GameState, [SideEffect])
+attemptToMoveRight :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 attemptToMoveRight ps assets gs =
   let (movedTetromino, successful) = shiftToRight (gs ^. board) (ps ^. tetromino)
-      (_, successfulDown) = shiftTetrominoDown (gs ^. board) movedTetromino
       (_, successfulRight) = shiftToRight (gs ^. board) movedTetromino
       wasLocking = isJust $ ps ^. lockingTime
       sideEffects =
@@ -172,23 +162,15 @@ attemptToMoveRight ps assets gs =
               then [PlayAudio (assets ^. soundAssets . movementSfx)]
               else [PlayAudio (assets ^. soundAssets . hitWallSfx)]
           else []
-   in -- A successful shift resets locking time
-      ( if successful
-          then
-            if successfulDown
-              then
-                gs & phase
-                  .~ Placing
-                    ( ps & tetromino .~ movedTetromino
-                        -- Also reset our position's decimal point to 0.5
-                        -- if we were locking
-                        & (tetromino . pos . _1) %~ (\i -> if wasLocking then fromIntegral (floor i) + 0.5 else i)
-                        & lockingTime .~ Nothing
-                    )
-              else gs & phase .~ Placing (ps & tetromino .~ movedTetromino & lockingTime ?~ 0)
-          else gs & phase .~ Placing (ps & tetromino .~ movedTetromino),
-        sideEffects
-      )
+      newPs =
+        ps & tetromino .~ movedTetromino
+          -- Also reset our position's decimal point to 0.5
+          -- if we were locking
+          & (tetromino . pos . _1) %~ (\i -> if wasLocking then fromIntegral (floor i) + 0.5 else i)
+          & movesPerformed +~ 1
+   in if successful
+        then postMovementLimitCheck newPs assets gs & _2 <>~ sideEffects
+        else (Game $ gs & phase .~ Placing (ps & tetromino .~ movedTetromino), sideEffects)
 
 shiftToRight :: Board -> Tetromino -> (Tetromino, Bool)
 shiftToRight board tetromino =
@@ -227,7 +209,7 @@ counterClockwiseRotationTranslationsToAttempt shape rot =
       OneEighty -> [(0, 0), (0, -1), (1, -1), (-2, 0), (-2, -1)]
       TwoSeventy -> [(0, 0), (0, -1), (-1, -1), (2, 0), (2, -1)]
 
-attemptRotation :: (Board -> Tetromino -> (Tetromino, Bool)) -> PlacingState -> Assets -> GameState -> (GameState, [SideEffect])
+attemptRotation :: (Board -> Tetromino -> (Tetromino, Bool)) -> PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 attemptRotation rotationF ps assets gs =
   let (newTet, successful) = rotationF (gs ^. board) (ps ^. tetromino)
       (_, successfulDown) = shiftTetrominoDown (gs ^. board) newTet
@@ -236,11 +218,10 @@ attemptRotation rotationF ps assets gs =
           let sideEffects =
                 [PlayAudio (assets ^. soundAssets . rotationSfx)]
                   <> if isNothing (ps ^. lockingTime) && (not successfulDown) then [PlayAudio (assets ^. soundAssets . landOnSurfaceSfx)] else []
-              newLockingTime = if successfulDown then Nothing else Just 0
-           in (gs & phase .~ Placing (ps & tetromino .~ newTet & lockingTime .~ newLockingTime), sideEffects)
-        else (gs, [])
+           in postMovementLimitCheck (ps & tetromino .~ newTet & movesPerformed +~ 1) assets gs & _2 <>~ sideEffects
+        else (Game gs, [])
 
-attemptClockwiseRotation :: PlacingState -> Assets -> GameState -> (GameState, [SideEffect])
+attemptClockwiseRotation :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 attemptClockwiseRotation =
   attemptRotation clockwiseRotation
 
@@ -255,7 +236,7 @@ clockwiseRotation board tetromino =
         Just newTet -> (newTet, True)
         Nothing -> (tetromino, False)
 
-attemptCounterClockwiseRotation :: PlacingState -> Assets -> GameState -> (GameState, [SideEffect])
+attemptCounterClockwiseRotation :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 attemptCounterClockwiseRotation =
   attemptRotation counterClockwiseRotation
 
@@ -269,6 +250,17 @@ counterClockwiseRotation board tetromino =
    in case maybeSuccessfullyRotatedTetromino of
         Just newTet -> (newTet, True)
         Nothing -> (tetromino, False)
+
+postMovementLimitCheck :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
+postMovementLimitCheck ps assets gs =
+  let (_, successfulDown) = shiftTetrominoDown (gs ^. board) (ps ^. tetromino)
+   in if successfulDown
+        then (Game $ gs & phase .~ Placing (ps & lockingTime .~ Nothing), [])
+        else
+          if (ps ^. movesPerformed) >= moveRotationLimit
+            then lockPiece (ps ^. tetromino) assets gs
+            else -- A succesful movement resets our locking time.
+              (Game $ gs & phase .~ Placing (ps & lockingTime ?~ 0), [])
 
 tickGame :: Double -> Assets -> GameState -> IO MainStatePhase
 tickGame dt assets gs =
@@ -344,7 +336,7 @@ sendTetromino shape fromHeld assets gs =
           then Nothing
           else Just 0
       newPhase =
-        Placing (PlacingState newTetromino fromHeld newLockingTime 0 0)
+        Placing (PlacingState newTetromino fromHeld newLockingTime 0 0 0)
    in if defeated
         then
           let (initGameOver, sideEffs) = initialGameOverState (assets ^. soundAssets) gs
@@ -475,8 +467,8 @@ floatingTextLineClear lc ttl speed (x, y) =
 
 -- Locks a piece in place. Returns MainStatePhase because this can make us lose the game
 -- if a piece gets locked entirely outside of the board.
-lockPiece :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
-lockPiece ps assets gs
+lockPiece :: Tetromino -> Assets -> GameState -> (MainStatePhase, [SideEffect])
+lockPiece tet assets gs
   -- This piece locked outside the board, so gg.
   | defeated =
     let (initGameOver, sideEffs) = initialGameOverState (assets ^. soundAssets) gs
@@ -487,7 +479,7 @@ lockPiece ps assets gs
         newPhase = ClearingLines 0
         newLinesCleared = gs ^. linesCleared + length linesToClear
         levelUpAudio = if levelFromLinesCleared newLinesCleared > levelFromLinesCleared (gs ^. linesCleared) then [PlayAudio (assets ^. soundAssets . levelUpSfx)] else []
-        lineClearType = calculateClearType (length linesToClear) (gs ^. maybeLastLockClear) (ps ^. tetromino) (gs ^. board)
+        lineClearType = calculateClearType (length linesToClear) (gs ^. maybeLastLockClear) tet (gs ^. board)
         clearScore = scoreFromLineClear lineClearType (levelFromLinesCleared (gs ^. linesCleared))
         statUpdate mv =
           case mv of
@@ -528,8 +520,14 @@ lockPiece ps assets gs
         )
   -- Plain old normal locking, send the next piece.
   | otherwise =
-    let (newPhase, sideEffects) = sendNextTetromino False assets (gs {_board = newBoard})
-        lockType = calculateLockType (ps ^. tetromino) (gs ^. board)
+    let gs' =
+          gs
+            & comboCount .~ 0
+            & score +~ maybe 0 snd maybeSpinReward
+            & floatingTexts <>~ spinText
+            & board .~ newBoard
+        (newPhase, sideEffects) = sendNextTetromino False assets gs'
+        lockType = calculateLockType tet (gs ^. board)
         maybeSpinReward =
           case lockType of
             NormalLock -> Nothing
@@ -542,19 +540,13 @@ lockPiece ps assets gs
               [ makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 600) t,
                 makeFloatingText 1.5 (-80) (fromIntegral gpX + scoreOffsetX, fromIntegral $ gpY + 648) (T.pack $ show s)
               ]
-        addScore gs_ = gs_ & comboCount .~ 0 & score +~ maybe 0 snd maybeSpinReward & floatingTexts <>~ spinText
-     in ( case newPhase of
-            Game gs' -> Game $ addScore gs'
-            GameOver gameOverState -> GameOver $ gameOverState & finishedGame %~ addScore
-            _ -> newPhase,
-          sideEffects <> [PlayAudio (assets ^. soundAssets . lockedPieceSfx)]
-        )
+     in (newPhase, sideEffects <> [PlayAudio (assets ^. soundAssets . lockedPieceSfx)])
   where
-    (bl1, bl2, bl3, bl4) = relativeBlocksFromRotation (ps ^. tetromino . shape) (ps ^. tetromino . rotation)
-    (tetI, tetJ) = ps ^. tetromino . pos
+    (bl1, bl2, bl3, bl4) = relativeBlocksFromRotation (tet ^. shape) (tet ^. rotation)
+    (tetI, tetJ) = tet ^. pos
     blockPos = map (\(blI, blJ) -> (blI + floor tetI, blJ + tetJ)) [bl1, bl2, bl3, bl4]
     positionsToUpdate = tupleHistogram blockPos
-    newBoard = (gs ^. board) // map (\(r, cols) -> (r, ((gs ^. board) ! r) // map (\col -> (col, Just $ ps ^. tetromino . shape)) cols)) positionsToUpdate
+    newBoard = (gs ^. board) // map (\(r, cols) -> (r, ((gs ^. board) ! r) // map (\col -> (col, Just $ tet ^. shape)) cols)) positionsToUpdate
     linesToClear = map fst $ filter (\(r, _) -> and (isJust <$> (newBoard ! r))) positionsToUpdate
     (TetrisLevel l) = levelFromLinesCleared (gs ^. linesCleared)
     (gpX, gpY) = gamePosition
@@ -582,7 +574,6 @@ tickPlacingState ps dt assets gs =
                   moves = replicate deltaMove (shiftTetrominoDown (gs ^. board))
                   (movedTetromino, successful) = foldl' (\(t, s) sTD -> let (t', s') = sTD t in (t', s && s')) (ps ^. tetromino, True) moves
                   (_, nextWasAlsoSuccessful) = shiftTetrominoDown (gs ^. board) movedTetromino
-                  newLocking = not (successful && nextWasAlsoSuccessful)
                   scoreToAward =
                     if gs ^. wantsToSoftDrop
                       then min (20 - (ps ^. softDropScore)) (floor (ps ^. tetromino . pos . _1) - floor (movedTetromino ^. pos . _1))
@@ -598,15 +589,16 @@ tickPlacingState ps dt assets gs =
                   newPs =
                     ps
                       { _tetromino = newTetromino,
-                        _lockingTime = if newLocking then Just 0 else Nothing,
                         _softDropScore = _softDropScore ps + scoreToAward
                       }
-               in (Game $ gs & phase .~ Placing newPs & score +~ scoreToAward, sideEffects)
+                  newGs = gs & score +~ scoreToAward & phase .~ Placing newPs
+               in -- If we're past the limit of moves allowed, instantly lock the piece.
+                  postMovementLimitCheck newPs assets newGs & _2 <>~ sideEffects
     -- We are locking a piece. Count the time to lock and if it expires, lock it in place
     -- and send a new piece to be placed.
     Just t ->
       if t >= timeToLock
-        then lockPiece ps assets gs
+        then lockPiece (ps ^. tetromino) assets gs
         else (Game $ gs & phase .~ Placing (ps & lockingTime ?~ (t + dt)), [])
 
 -- Coordinates are in (line, column) form relative to its axis.

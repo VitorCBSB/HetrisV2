@@ -6,6 +6,7 @@ module Constants
     cellSize,
     softDropSpeed,
     timeToLock,
+    moveRotationLimit,
     timeToRestart,
     clearingLinesTime,
     linesLevelUp,
@@ -48,6 +49,12 @@ clearingLinesTime = 0.5
 -- Line clears needed to level up
 linesLevelUp :: Int
 linesLevelUp = 10
+
+-- Move / rotation limit.
+-- How many moves or rotations we can perform before
+-- a piece locks into place instantly.
+moveRotationLimit :: Int
+moveRotationLimit = 15
 
 gamePosition :: (Int, Int)
 gamePosition = (200, 25)
