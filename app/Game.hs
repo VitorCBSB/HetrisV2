@@ -107,12 +107,11 @@ hardDrop ps assets gs =
   let newTet = dropTetromino (gs ^. board) (ps ^. tetromino)
       dropDiff = floor (ps ^. tetromino . pos . _1) - floor (newTet ^. pos . _1)
       scoreToAward = min (40 - ps ^. hardDropScore) (dropDiff * 2)
-      newPs = 
+      newPs =
         ps & tetromino .~ newTet
-           & hardDropScore +~ scoreToAward
+          & hardDropScore +~ scoreToAward
       newGs = gs & phase .~ Placing newPs & score +~ scoreToAward
-   in 
-     postMovementLimitCheck newPs assets newGs & _2 <>~ [PlayAudio (assets ^. soundAssets . landOnSurfaceSfx)]
+   in postMovementLimitCheck newPs assets newGs & _2 <>~ [PlayAudio (assets ^. soundAssets . landOnSurfaceSfx)]
 
 attemptToMoveLeft :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 attemptToMoveLeft ps assets gs =
