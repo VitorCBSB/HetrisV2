@@ -80,7 +80,7 @@ inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
              in sendTetromino ts True assets newGS
       -- Hard drop
       | SDL.keysymScancode keySym == SDL.ScancodeSpace && not repeat && isNothing (placingState ^. lockingTime) ->
-        hardDrop placingState assets gs & _1 %~ Game
+        hardDrop placingState assets gs
       | (SDL.keysymScancode keySym == SDL.ScancodeEscape || SDL.keysymScancode keySym == SDL.ScancodeF1) && not repeat ->
         let newGS = gs & wantsToSoftDrop .~ False
             (pauseState, pauseSfx) = initialPauseState (assets ^. soundAssets) newGS
@@ -98,25 +98,21 @@ inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
 
 inputRelease :: SDL.KeyboardEventData -> GameState -> (MainStatePhase, [SideEffect])
 inputRelease (SDL.KeyboardEventData _ _ _ keySym) gs
-  | SDL.keysymScancode keySym == SDL.ScancodeDown = 
+  | SDL.keysymScancode keySym == SDL.ScancodeDown =
     (Game $ gs & wantsToSoftDrop .~ False, [])
   | otherwise = (Game gs, [])
 
-hardDrop :: PlacingState -> Assets -> GameState -> (GameState, [SideEffect])
+hardDrop :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 hardDrop ps assets gs =
   let newTet = dropTetromino (gs ^. board) (ps ^. tetromino)
       dropDiff = floor (ps ^. tetromino . pos . _1) - floor (newTet ^. pos . _1)
       scoreToAward = min (40 - ps ^. hardDropScore) (dropDiff * 2)
-   in ( gs
-          & phase
-            .~ Placing
-              ( ps & tetromino .~ newTet
-                  & lockingTime ?~ 0
-                  & hardDropScore +~ scoreToAward
-              )
-          & score +~ scoreToAward,
-        [PlayAudio (assets ^. soundAssets . landOnSurfaceSfx)]
-      )
+      newPs = 
+        ps & tetromino .~ newTet
+           & hardDropScore +~ scoreToAward
+      newGs = gs & phase .~ Placing newPs & score +~ scoreToAward
+   in 
+     postMovementLimitCheck newPs assets newGs & _2 <>~ [PlayAudio (assets ^. soundAssets . landOnSurfaceSfx)]
 
 attemptToMoveLeft :: PlacingState -> Assets -> GameState -> (MainStatePhase, [SideEffect])
 attemptToMoveLeft ps assets gs =
