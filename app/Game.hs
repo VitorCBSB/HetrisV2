@@ -97,13 +97,10 @@ inputPress (SDL.KeyboardEventData _ _ repeat keySym) assets gs =
         else (Game gs, [])
 
 inputRelease :: SDL.KeyboardEventData -> GameState -> (MainStatePhase, [SideEffect])
-inputRelease (SDL.KeyboardEventData _ _ _ keySym) gs =
-  case gs ^. phase of
-    Placing _ ->
-      if SDL.keysymScancode keySym == SDL.ScancodeDown
-        then (Game $ gs & wantsToSoftDrop .~ False, [])
-        else (Game gs, [])
-    _ -> (Game gs, [])
+inputRelease (SDL.KeyboardEventData _ _ _ keySym) gs
+  | SDL.keysymScancode keySym == SDL.ScancodeDown = 
+    (Game $ gs & wantsToSoftDrop .~ False, [])
+  | otherwise = (Game gs, [])
 
 hardDrop :: PlacingState -> Assets -> GameState -> (GameState, [SideEffect])
 hardDrop ps assets gs =
